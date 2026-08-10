@@ -12,5 +12,14 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/dashboard/dashboard.page'),
   },
+  {
+    path: 'board/:slug',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/board/board.page'),
+  },
+  {
+    path: 'invite/:token',
+    loadComponent: () => import('./features/invite/accept-invite.page'),
+  },
   { path: '**', redirectTo: 'auth/login' },
 ];
