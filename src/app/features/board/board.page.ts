@@ -5,12 +5,21 @@ import { BoardStore } from '../../core/boards/board.store';
 import { BoardRealtimeFacade } from '../../core/boards/board-realtime.facade';
 import { AuthStore } from '../../core/auth/auth.store';
 import { BoardColumnComponent } from './components/board-column.component';
+import { ConnectionBannerComponent } from '../../shared/ui/connection-banner.component';
+import { PresenceBarComponent } from '../../shared/ui/presence-bar.component';
+import { CursorLayerComponent } from '../../shared/ui/cursor-layer.component';
 import type { BoardDetailDto } from '../../core/boards/models/board.models';
 
 @Component({
   selector: 'cf-board-page',
   standalone: true,
-  imports: [RouterLink, BoardColumnComponent],
+  imports: [
+    RouterLink,
+    BoardColumnComponent,
+    ConnectionBannerComponent,
+    PresenceBarComponent,
+    CursorLayerComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loading()) {
@@ -21,13 +30,17 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
           <div>
             <a routerLink="/dashboard" class="cf-focus-ring text-sm underline">← Mis tableros</a>
             <h1 class="text-2xl font-semibold">{{ b.title }}</h1>
-            <p class="text-sm text-neutral-500">
-              Fase: {{ store.board()?.phase ?? b.phase }} · {{ connectionLabel() }}
-            </p>
+            <p class="text-sm text-neutral-500">Fase: {{ store.board()?.phase ?? b.phase }}</p>
+            <cf-connection-banner [state]="realtime.connectionState()" />
           </div>
 
-          @if (b.myRole === 'owner') {
-            <div class="flex flex-col items-end gap-2">
+          <div class="flex flex-col items-end gap-2">
+            <cf-presence-bar
+              [participants]="store.participants()"
+              [selfUserId]="auth.user()?.id ?? null"
+            />
+
+            @if (b.myRole === 'owner') {
               <button
                 type="button"
                 class="cf-focus-ring rounded-md border px-4 py-2 text-sm"
@@ -38,11 +51,11 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
               @if (inviteLink(); as link) {
                 <code class="max-w-xs truncate text-xs text-neutral-500">{{ link }}</code>
               }
-            </div>
-          }
+            }
+          </div>
         </header>
 
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="relative grid gap-4 sm:grid-cols-3">
           @for (column of store.columns(); track column.id) {
             <cf-board-column
               [column]="column"
@@ -54,6 +67,13 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
               (deleteRequested)="deleteNote($event)"
             />
           }
+
+          <cf-cursor-layer
+            [cursors]="realtime.cursors()"
+            [participants]="store.participants()"
+            [selfUserId]="auth.user()?.id ?? null"
+            (cursorMove)="realtime.sendCursor($event.x, $event.y)"
+          />
         </div>
       </main>
     } @else {
@@ -65,7 +85,7 @@ export default class BoardPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly boardsService = inject(BoardsService);
-  private readonly realtime = inject(BoardRealtimeFacade);
+  protected readonly realtime = inject(BoardRealtimeFacade);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly store = inject(BoardStore);
@@ -93,19 +113,6 @@ export default class BoardPage {
     });
 
     this.destroyRef.onDestroy(() => this.realtime.disconnect());
-  }
-
-  connectionLabel(): string {
-    switch (this.realtime.connectionState()) {
-      case 'connected':
-        return 'En vivo';
-      case 'connecting':
-        return 'Conectando…';
-      case 'reconnecting':
-        return 'Reconectando…';
-      default:
-        return 'Sin conexión';
-    }
   }
 
   generateInvite(): void {

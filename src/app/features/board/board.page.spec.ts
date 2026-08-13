@@ -6,6 +6,7 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { environment } from '../../core/config/environment';
 import { BoardRealtimeFacade } from '../../core/boards/board-realtime.facade';
+import type { CursorPosition } from '../../core/boards/board-realtime.facade';
 import type { ConnectionState } from '../../core/realtime/realtime.service';
 import BoardPage from './board.page';
 
@@ -39,7 +40,7 @@ describe('BoardPage', () => {
   let fixture: ComponentFixture<BoardPage>;
   let httpMock: HttpTestingController;
   let realtimeFacade: jasmine.SpyObj<
-    Pick<BoardRealtimeFacade, 'connect' | 'disconnect' | 'createNote' | 'deleteNote'>
+    Pick<BoardRealtimeFacade, 'connect' | 'disconnect' | 'createNote' | 'deleteNote' | 'sendCursor'>
   >;
 
   async function setup(slug = 'retro-abc') {
@@ -48,9 +49,12 @@ describe('BoardPage', () => {
       'disconnect',
       'createNote',
       'deleteNote',
+      'sendCursor',
     ]);
     (realtimeFacade as unknown as { connectionState: () => ConnectionState }).connectionState =
       signal<ConnectionState>('connected');
+    (realtimeFacade as unknown as { cursors: () => Record<string, CursorPosition> }).cursors =
+      signal<Record<string, CursorPosition>>({});
 
     await TestBed.configureTestingModule({
       imports: [BoardPage],

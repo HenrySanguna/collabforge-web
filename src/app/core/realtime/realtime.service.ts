@@ -29,9 +29,16 @@ export class RealtimeService {
     });
 
     socket.on('connect', () => this._state.set('connected'));
-    socket.on('disconnect', () => this._state.set('reconnecting'));
+    socket.on('disconnect', (reason) => {
+      // 'io server disconnect' es el servidor cerrando la conexión explícitamente:
+      // socket.io NO reintenta solo en ese caso, así que es un desconectado real.
+      // Los demás motivos ('transport close', 'ping timeout', etc.) sí disparan
+      // reintentos automáticos, cubiertos por 'reconnect_attempt' más abajo.
+      this._state.set(reason === 'io server disconnect' ? 'disconnected' : 'reconnecting');
+    });
     socket.io.on('reconnect_attempt', () => this._state.set('reconnecting'));
     socket.io.on('reconnect', () => this._state.set('connected'));
+    socket.io.on('reconnect_failed', () => this._state.set('disconnected'));
 
     this.socket = socket;
     return socket;
@@ -41,6 +48,15 @@ export class RealtimeService {
     this.socket?.disconnect();
     this.socket = null;
     this._state.set('idle');
+  }
+
+  emitVolatile<E extends keyof ClientEvents>(event: E, payload: ClientEvents[E]): void {
+    const socket = this.socket;
+    if (!socket) return;
+
+    // Igual que en emitWithAck: el mapa de eventos tipa emit() con la forma exacta
+    // del payload, pero el genérico E no colapsa a un literal, así que se castea.
+    (socket.volatile.emit as (event: string, payload: unknown) => void)(event, payload);
   }
 
   emitWithAck<E extends keyof ClientEvents, R>(event: E, payload: ClientEvents[E]): Promise<R> {

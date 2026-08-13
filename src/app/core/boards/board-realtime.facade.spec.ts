@@ -13,6 +13,7 @@ describe('BoardRealtimeFacade', () => {
   let auth: AuthStore;
   let connectSpy: jasmine.Spy;
   let emitWithAckSpy: jasmine.Spy;
+  let emitVolatileSpy: jasmine.Spy;
   let socketHandlers: Record<string, (payload: unknown) => void>;
 
   beforeEach(() => {
@@ -25,11 +26,13 @@ describe('BoardRealtimeFacade', () => {
 
     connectSpy = jasmine.createSpy('connect').and.returnValue(fakeSocket);
     emitWithAckSpy = jasmine.createSpy('emitWithAck');
+    emitVolatileSpy = jasmine.createSpy('emitVolatile');
 
     const realtimeMock: Partial<RealtimeService> = {
       connect: connectSpy as unknown as RealtimeService['connect'],
       disconnect: jasmine.createSpy('disconnect') as unknown as RealtimeService['disconnect'],
       emitWithAck: emitWithAckSpy as unknown as RealtimeService['emitWithAck'],
+      emitVolatile: emitVolatileSpy as unknown as RealtimeService['emitVolatile'],
       state: signal<ConnectionState>('idle').asReadonly(),
     };
 
@@ -141,5 +144,58 @@ describe('BoardRealtimeFacade', () => {
 
     await facade.deleteNote('note-1');
     expect(store.findNote('note-1')).toBeDefined();
+  });
+
+  it('aplica los participantes al recibir presence:updated', () => {
+    facade.connect('board-1');
+
+    socketHandlers['presence:updated']({
+      participants: [
+        { userId: 'user-1', name: 'Ana', avatarColor: '#fff', role: 'owner', isOnline: true },
+      ],
+    });
+
+    expect(store.participants().map((p) => p.userId)).toEqual(['user-1']);
+  });
+
+  it('guarda la posición del cursor remoto al recibir cursor:moved', () => {
+    facade.connect('board-1');
+
+    socketHandlers['cursor:moved']({ userId: 'user-2', x: 0.4, y: 0.6 });
+
+    expect(facade.cursors()['user-2']).toEqual({ x: 0.4, y: 0.6 });
+  });
+
+  it('elimina cursores de usuarios que ya no están presentes al recibir presence:updated', () => {
+    facade.connect('board-1');
+
+    socketHandlers['cursor:moved']({ userId: 'user-2', x: 0.4, y: 0.6 });
+    socketHandlers['cursor:moved']({ userId: 'user-3', x: 0.1, y: 0.1 });
+    expect(Object.keys(facade.cursors())).toEqual(['user-2', 'user-3']);
+
+    socketHandlers['presence:updated']({
+      participants: [
+        { userId: 'user-1', name: 'Ana', avatarColor: '#fff', role: 'owner', isOnline: true },
+        { userId: 'user-2', name: 'Beto', avatarColor: '#000', role: 'member', isOnline: true },
+      ],
+    });
+
+    expect(Object.keys(facade.cursors())).toEqual(['user-2']);
+  });
+
+  it('sendCursor delega en realtime.emitVolatile con las coordenadas normalizadas', () => {
+    facade.sendCursor(0.25, 0.75);
+
+    expect(emitVolatileSpy).toHaveBeenCalledWith('cursor:move', { x: 0.25, y: 0.75 });
+  });
+
+  it('disconnect limpia el mapa de cursores', () => {
+    facade.connect('board-1');
+    socketHandlers['cursor:moved']({ userId: 'user-2', x: 0.1, y: 0.1 });
+    expect(Object.keys(facade.cursors()).length).toBe(1);
+
+    facade.disconnect();
+
+    expect(facade.cursors()).toEqual({});
   });
 });

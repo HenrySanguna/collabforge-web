@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import type {
   BoardSnapshot,
   CreateNoteAck,
@@ -12,13 +12,21 @@ import { RealtimeService } from '../realtime/realtime.service';
 import { BoardStore } from './board.store';
 import { AuthStore } from '../auth/auth.store';
 
+export interface CursorPosition {
+  x: number;
+  y: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BoardRealtimeFacade {
   private readonly realtime = inject(RealtimeService);
   private readonly store = inject(BoardStore);
   private readonly auth = inject(AuthStore);
 
+  private readonly _cursors = signal<Record<string, CursorPosition>>({});
+
   readonly connectionState = this.realtime.state;
+  readonly cursors = this._cursors.asReadonly();
 
   connect(boardId: string): void {
     const token = this.auth.accessToken();
@@ -31,11 +39,33 @@ export class BoardRealtimeFacade {
     socket.on('note:updated', (note: NoteDto) => this.store.upsertNote(note));
     socket.on('note:moved', (payload: NoteMovedPayload) => this.applyMove(payload));
     socket.on('note:deleted', ({ noteId }) => this.store.removeNote(noteId));
+    socket.on('presence:updated', ({ participants }) => {
+      this.store.setParticipants(participants);
+      this.pruneCursors(new Set(participants.map((p) => p.userId)));
+    });
+    socket.on('cursor:moved', ({ userId, x, y }) => {
+      this._cursors.update((cursors) => ({ ...cursors, [userId]: { x, y } }));
+    });
   }
 
   disconnect(): void {
     this.realtime.disconnect();
     this.store.reset();
+    this._cursors.set({});
+  }
+
+  sendCursor(x: number, y: number): void {
+    this.realtime.emitVolatile('cursor:move', { x, y });
+  }
+
+  private pruneCursors(activeUserIds: Set<string>): void {
+    this._cursors.update((cursors) => {
+      const next: Record<string, CursorPosition> = {};
+      for (const [userId, position] of Object.entries(cursors)) {
+        if (activeUserIds.has(userId)) next[userId] = position;
+      }
+      return next;
+    });
   }
 
   async createNote(columnId: string, text: string): Promise<void> {

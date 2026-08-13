@@ -1,5 +1,16 @@
 import { BoardStore } from './board.store';
-import type { BoardSnapshot, NoteDto } from '@collabforge/contracts';
+import type { BoardSnapshot, NoteDto, ParticipantDto } from '@collabforge/contracts';
+
+function aParticipant(overrides: Partial<ParticipantDto> = {}): ParticipantDto {
+  return {
+    userId: 'user-1',
+    name: 'Ana',
+    avatarColor: '#abcdef',
+    role: 'owner',
+    isOnline: true,
+    ...overrides,
+  };
+}
 
 function aSnapshot(overrides: Partial<BoardSnapshot> = {}): BoardSnapshot {
   return {
@@ -111,10 +122,46 @@ describe('BoardStore', () => {
     expect(store.myRole()).toBe('member');
   });
 
-  it('reset limpia snapshot y notas', () => {
-    store.applySnapshot(aSnapshot({ notes: [aNote()] }));
+  it('reset limpia snapshot, notas y participantes', () => {
+    store.applySnapshot(aSnapshot({ notes: [aNote()], participants: [aParticipant()] }));
     store.reset();
     expect(store.board()).toBeNull();
     expect(store.notes().length).toBe(0);
+    expect(store.participants().length).toBe(0);
+  });
+
+  it('applySnapshot arma los participantes desde el snapshot', () => {
+    store.applySnapshot(aSnapshot({ participants: [aParticipant()] }));
+    expect(store.participants()).toEqual([aParticipant()]);
+  });
+
+  it('setParticipants reemplaza los participantes sin tocar notas ni snapshot', () => {
+    store.applySnapshot(aSnapshot({ notes: [aNote()] }));
+    store.setParticipants([aParticipant({ userId: 'user-2', name: 'Beto' })]);
+
+    expect(store.participants()).toEqual([aParticipant({ userId: 'user-2', name: 'Beto' })]);
+    expect(store.notes().length).toBe(1);
+  });
+
+  it('seedFromRest arranca con participantes vacíos', () => {
+    store.setParticipants([aParticipant()]);
+    store.seedFromRest({
+      id: 'board-1',
+      slug: 'retro-abc',
+      title: 'Retro',
+      phase: 'COLLECTING',
+      isArchived: false,
+      myRole: 'member',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      ownerId: 'user-1',
+      revealed: false,
+      voteBudget: 3,
+      allowMultiVote: false,
+      liveTally: false,
+      columns: [{ id: 'col-1', title: 'Start', color: '#fff', position: 0 }],
+    });
+
+    expect(store.participants().length).toBe(0);
   });
 });

@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { BoardSnapshot, NoteDto } from '@collabforge/contracts';
+import type { BoardSnapshot, NoteDto, ParticipantDto } from '@collabforge/contracts';
 import type { BoardDetailDto } from './models/board.models';
 
 export interface OptimisticNote extends NoteDto {
@@ -10,12 +10,14 @@ export interface OptimisticNote extends NoteDto {
 export class BoardStore {
   private readonly _snapshot = signal<BoardSnapshot | null>(null);
   private readonly _notes = signal<Record<string, OptimisticNote>>({});
+  private readonly _participants = signal<ParticipantDto[]>([]);
 
   readonly snapshot = this._snapshot.asReadonly();
   readonly board = computed(() => this._snapshot()?.board ?? null);
   readonly columns = computed(() => this._snapshot()?.columns ?? []);
   readonly myRole = computed(() => this._snapshot()?.myRole ?? null);
   readonly notes = computed(() => Object.values(this._notes()));
+  readonly participants = this._participants.asReadonly();
 
   readonly notesByColumn = computed(() => {
     const grouped: Partial<Record<string, OptimisticNote[]>> = {};
@@ -52,13 +54,19 @@ export class BoardStore {
       myRole: board.myRole,
       serverTime: new Date().toISOString(),
     });
+    this._participants.set([]);
   }
 
   applySnapshot(snapshot: BoardSnapshot): void {
     this._snapshot.set(snapshot);
+    this._participants.set(snapshot.participants);
     const byId: Record<string, OptimisticNote> = {};
     for (const note of snapshot.notes) byId[note.id] = note;
     this._notes.set(byId);
+  }
+
+  setParticipants(participants: ParticipantDto[]): void {
+    this._participants.set(participants);
   }
 
   upsertNote(note: NoteDto): void {
@@ -93,5 +101,6 @@ export class BoardStore {
   reset(): void {
     this._snapshot.set(null);
     this._notes.set({});
+    this._participants.set([]);
   }
 }
