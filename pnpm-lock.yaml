@@ -28,7 +28,7 @@ importers:
         version: 20.3.27(@angular/common@20.3.27(@angular/core@20.3.27(@angular/compiler@20.3.27)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.3.27(@angular/compiler@20.3.27)(rxjs@7.8.2))(@angular/platform-browser@20.3.27(@angular/common@20.3.27(@angular/core@20.3.27(@angular/compiler@20.3.27)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.3.27(@angular/compiler@20.3.27)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@collabforge/contracts':
         specifier: github:HenrySanguna/collab-forge-api#develop&path:src/contracts
-        version: git+https://git@github.com:HenrySanguna/collab-forge-api.git#5932dc8ffc0ce14cd7826d5d637b07584b54a804&path:src/contracts
+        version: git+https://git@github.com:HenrySanguna/collab-forge-api.git#ed280637b3e51713a4843a8c97c82d30065258f4&path:src/contracts
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -445,8 +445,8 @@ packages:
     resolution: {integrity: sha512-9YtjJG2sSHssCcmU4dCeqHHwHF5Il0Gc1C8AywksbZyvQ9CFvpNURFuJbT21OpMdp0KHWJB14clMy85oiGwX9w==}
     engines: {node: '>=18.18'}
 
-  '@collabforge/contracts@git+https://git@github.com:HenrySanguna/collab-forge-api.git#5932dc8ffc0ce14cd7826d5d637b07584b54a804&path:src/contracts':
-    resolution: {commit: 5932dc8ffc0ce14cd7826d5d637b07584b54a804, path: src/contracts, repo: git@github.com:HenrySanguna/collab-forge-api.git, type: git}
+  '@collabforge/contracts@git+https://git@github.com:HenrySanguna/collab-forge-api.git#ed280637b3e51713a4843a8c97c82d30065258f4&path:src/contracts':
+    resolution: {commit: ed280637b3e51713a4843a8c97c82d30065258f4, path: src/contracts, repo: git@github.com:HenrySanguna/collab-forge-api.git, type: git}
     version: 1.0.0
 
   '@colors/colors@1.5.0':
@@ -4033,7 +4033,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  '@collabforge/contracts@git+https://git@github.com:HenrySanguna/collab-forge-api.git#5932dc8ffc0ce14cd7826d5d637b07584b54a804&path:src/contracts': {}
+  '@collabforge/contracts@git+https://git@github.com:HenrySanguna/collab-forge-api.git#ed280637b3e51713a4843a8c97c82d30065258f4&path:src/contracts': {}
 
   '@colors/colors@1.5.0': {}
 
