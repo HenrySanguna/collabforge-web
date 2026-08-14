@@ -55,6 +55,7 @@ describe('BoardPage', () => {
       signal<ConnectionState>('connected');
     (realtimeFacade as unknown as { cursors: () => Record<string, CursorPosition> }).cursors =
       signal<Record<string, CursorPosition>>({});
+    (realtimeFacade as unknown as { kicked: () => boolean }).kicked = signal(false);
 
     await TestBed.configureTestingModule({
       imports: [BoardPage],

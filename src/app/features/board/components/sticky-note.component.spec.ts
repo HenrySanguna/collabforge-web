@@ -63,4 +63,74 @@ describe('StickyNoteComponent', () => {
 
     expect(fixture.nativeElement.querySelector('button')).toBeNull();
   });
+
+  it('no muestra el conteo de votos cuando voteCount es undefined (tally oculto)', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('voteCount', undefined);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('votos');
+  });
+
+  it('muestra 0 votos cuando voteCount es explícitamente 0 (tally visible, nadie votó)', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('voteCount', 0);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('0 votos');
+  });
+
+  it('muestra el conteo de votos cuando voteCount tiene un valor', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('voteCount', 5);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('5 votos');
+  });
+
+  it('muestra el botón de votar solo cuando canVote es true', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('canVote', false);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).not.toContain('Votar');
+
+    fixture.componentRef.setInput('canVote', true);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('Votar');
+  });
+
+  it('emite voteCast al pulsar votar', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('canVote', true);
+    await fixture.whenStable();
+
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.voteCast.subscribe(spy);
+    const button = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((b) => b.textContent?.trim() === 'Votar');
+    button?.click();
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('muestra "Quitar voto" y emite voteRetracted solo cuando myVoteCount > 0', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('canVote', true);
+    fixture.componentRef.setInput('myVoteCount', 0);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).not.toContain('Quitar voto');
+
+    fixture.componentRef.setInput('myVoteCount', 1);
+    await fixture.whenStable();
+
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.voteRetracted.subscribe(spy);
+    const button = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((b) => b.textContent?.trim() === 'Quitar voto');
+    button?.click();
+
+    expect(spy).toHaveBeenCalled();
+  });
 });

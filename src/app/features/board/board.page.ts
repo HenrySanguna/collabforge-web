@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import type { BoardPhase } from '@collabforge/contracts';
 import { BoardsService } from '../../core/boards/boards.service';
 import { BoardStore } from '../../core/boards/board.store';
 import { BoardRealtimeFacade } from '../../core/boards/board-realtime.facade';
@@ -8,6 +17,9 @@ import { BoardColumnComponent } from './components/board-column.component';
 import { ConnectionBannerComponent } from '../../shared/ui/connection-banner.component';
 import { PresenceBarComponent } from '../../shared/ui/presence-bar.component';
 import { CursorLayerComponent } from '../../shared/ui/cursor-layer.component';
+import { SessionTimerComponent } from '../../shared/ui/session-timer.component';
+import { PhaseControlsComponent } from '../../shared/ui/phase-controls.component';
+import { VoteBudgetComponent } from '../../shared/ui/vote-budget.component';
 import type { BoardDetailDto } from '../../core/boards/models/board.models';
 
 @Component({
@@ -19,6 +31,9 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
     ConnectionBannerComponent,
     PresenceBarComponent,
     CursorLayerComponent,
+    SessionTimerComponent,
+    PhaseControlsComponent,
+    VoteBudgetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -30,8 +45,13 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
           <div>
             <a routerLink="/dashboard" class="cf-focus-ring text-sm underline">← Mis tableros</a>
             <h1 class="text-2xl font-semibold">{{ b.title }}</h1>
-            <p class="text-sm text-neutral-500">Fase: {{ store.board()?.phase ?? b.phase }}</p>
+            <p class="text-sm text-neutral-500">Fase: {{ phase() }}</p>
             <cf-connection-banner [state]="realtime.connectionState()" />
+            <cf-session-timer
+              [endsAt]="store.timerEndsAt()"
+              [serverTime]="store.serverTime()"
+              [paused]="store.timerPaused()"
+            />
           </div>
 
           <div class="flex flex-col items-end gap-2">
@@ -39,6 +59,10 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
               [participants]="store.participants()"
               [selfUserId]="auth.user()?.id ?? null"
             />
+
+            @if (phase() === 'VOTING') {
+              <cf-vote-budget [budget]="store.voteBudget()" [spent]="votesSpent()" />
+            }
 
             @if (b.myRole === 'owner') {
               <button
@@ -55,16 +79,32 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
           </div>
         </header>
 
+        <cf-phase-controls
+          [phase]="phase()"
+          [isOwner]="b.myRole === 'owner'"
+          (phaseChange)="changePhase($event)"
+          (startTimer)="startTimer($event)"
+          (pauseTimer)="pauseTimer()"
+          (cancelTimer)="cancelTimer()"
+          (reveal)="reveal()"
+        />
+
         <div class="relative grid gap-4 sm:grid-cols-3">
           @for (column of store.columns(); track column.id) {
             <cf-board-column
               [column]="column"
               [notes]="store.notesByColumn()[column.id] ?? []"
-              [canCreate]="b.phase === 'COLLECTING'"
+              [canCreate]="phase() === 'COLLECTING'"
               [myUserId]="auth.user()?.id ?? null"
               [myRole]="b.myRole"
+              [phase]="phase()"
+              [voteTally]="store.tally()"
+              [myVotes]="store.myVotes()"
+              [canVote]="canVote()"
               (noteCreated)="createNote(column.id, $event)"
               (deleteRequested)="deleteNote($event)"
+              (voteCast)="castVote($event)"
+              (voteRetracted)="retractVote($event)"
             />
           }
 
@@ -95,6 +135,14 @@ export default class BoardPage {
   readonly loading = signal(true);
   readonly inviteLink = signal<string | null>(null);
 
+  protected readonly phase = computed<BoardPhase>(() => this.store.phase() ?? 'COLLECTING');
+  protected readonly votesSpent = computed(() =>
+    Object.values(this.store.myVotes()).reduce((sum, count) => sum + count, 0),
+  );
+  protected readonly canVote = computed(
+    () => this.phase() === 'VOTING' && this.votesSpent() < this.store.voteBudget(),
+  );
+
   constructor() {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (!slug) {
@@ -113,6 +161,12 @@ export default class BoardPage {
     });
 
     this.destroyRef.onDestroy(() => this.realtime.disconnect());
+
+    effect(() => {
+      if (this.realtime.kicked()) {
+        void this.router.navigate(['/dashboard'], { queryParams: { removed: 'true' } });
+      }
+    });
   }
 
   generateInvite(): void {
@@ -130,5 +184,33 @@ export default class BoardPage {
 
   deleteNote(noteId: string): void {
     void this.realtime.deleteNote(noteId);
+  }
+
+  castVote(noteId: string): void {
+    void this.realtime.castVote(noteId);
+  }
+
+  retractVote(noteId: string): void {
+    void this.realtime.retractVote(noteId);
+  }
+
+  changePhase(phase: BoardPhase): void {
+    void this.realtime.changePhase(phase);
+  }
+
+  startTimer(durationSeconds: number): void {
+    void this.realtime.startTimer(durationSeconds);
+  }
+
+  pauseTimer(): void {
+    void this.realtime.pauseTimer();
+  }
+
+  cancelTimer(): void {
+    void this.realtime.cancelTimer();
+  }
+
+  reveal(): void {
+    void this.realtime.reveal();
   }
 }

@@ -164,4 +164,143 @@ describe('BoardStore', () => {
 
     expect(store.participants().length).toBe(0);
   });
+
+  it('applySnapshot inicializa phase/revealed/timer/votos desde el snapshot', () => {
+    store.applySnapshot(
+      aSnapshot({
+        board: {
+          id: 'board-1',
+          slug: 's',
+          title: 'T',
+          phase: 'VOTING',
+          revealed: false,
+          voteBudget: 3,
+          allowMultiVote: false,
+          liveTally: true,
+          timerEndsAt: '2026-01-01T00:05:00Z',
+          isArchived: false,
+          ownerId: 'user-1',
+        },
+        myVotes: { 'note-1': 2 },
+        tally: { 'note-1': 4 },
+      }),
+    );
+
+    expect(store.phase()).toBe('VOTING');
+    expect(store.revealed()).toBe(false);
+    expect(store.timerEndsAt()).toBe('2026-01-01T00:05:00Z');
+    expect(store.timerPaused()).toBe(false);
+    expect(store.myVotes()).toEqual({ 'note-1': 2 });
+    expect(store.tally()).toEqual({ 'note-1': 4 });
+    expect(store.voteBudget()).toBe(3);
+    expect(store.liveTally()).toBe(true);
+  });
+
+  it('setPhase actualiza phase y revealed sin tocar el resto del snapshot', () => {
+    store.applySnapshot(aSnapshot({ notes: [aNote()] }));
+    store.setPhase('DISCUSSING', true);
+
+    expect(store.phase()).toBe('DISCUSSING');
+    expect(store.revealed()).toBe(true);
+    expect(store.notes().length).toBe(1);
+  });
+
+  it('setTimerState actualiza endsAt/paused/remainingMs', () => {
+    store.setTimerState(null, true, 4000);
+
+    expect(store.timerEndsAt()).toBeNull();
+    expect(store.timerPaused()).toBe(true);
+    expect(store.timerRemainingMs()).toBe(4000);
+  });
+
+  it('applyMyVoteUpdate actualiza solo el voto de esa nota', () => {
+    store.applySnapshot(aSnapshot({ myVotes: { 'note-1': 1 } }));
+    store.applyMyVoteUpdate('note-2', 1);
+
+    expect(store.myVotes()).toEqual({ 'note-1': 1, 'note-2': 1 });
+  });
+
+  it('applyTally reemplaza el tally completo', () => {
+    store.applyTally({ 'note-1': 3, 'note-2': 1 });
+    expect(store.tally()).toEqual({ 'note-1': 3, 'note-2': 1 });
+  });
+
+  it('ordena las notas por votos descendente en DISCUSSING', () => {
+    store.applySnapshot(
+      aSnapshot({
+        board: {
+          id: 'board-1',
+          slug: 's',
+          title: 'T',
+          phase: 'DISCUSSING',
+          revealed: true,
+          voteBudget: 3,
+          allowMultiVote: false,
+          liveTally: false,
+          timerEndsAt: null,
+          isArchived: false,
+          ownerId: 'user-1',
+        },
+        notes: [
+          aNote({ id: 'n1', position: 1 }),
+          aNote({ id: 'n2', position: 2 }),
+          aNote({ id: 'n3', position: 3 }),
+        ],
+        tally: { n1: 1, n2: 5, n3: 3 },
+      }),
+    );
+
+    const ordered = store.notesByColumn()['col-1'] ?? [];
+    expect(ordered.map((n) => n.id)).toEqual(['n2', 'n3', 'n1']);
+  });
+
+  it('usa la posición como desempate estable cuando los votos coinciden en DISCUSSING', () => {
+    store.applySnapshot(
+      aSnapshot({
+        board: {
+          id: 'board-1',
+          slug: 's',
+          title: 'T',
+          phase: 'DISCUSSING',
+          revealed: true,
+          voteBudget: 3,
+          allowMultiVote: false,
+          liveTally: false,
+          timerEndsAt: null,
+          isArchived: false,
+          ownerId: 'user-1',
+        },
+        notes: [aNote({ id: 'n2', position: 2 }), aNote({ id: 'n1', position: 1 })],
+        tally: { n1: 2, n2: 2 },
+      }),
+    );
+
+    const ordered = store.notesByColumn()['col-1'] ?? [];
+    expect(ordered.map((n) => n.id)).toEqual(['n1', 'n2']);
+  });
+
+  it('mantiene el orden por posición fuera de DISCUSSING aunque haya tally', () => {
+    store.applySnapshot(
+      aSnapshot({
+        notes: [aNote({ id: 'n2', position: 2 }), aNote({ id: 'n1', position: 1 })],
+        tally: { n1: 1, n2: 9 },
+      }),
+    );
+
+    const ordered = store.notesByColumn()['col-1'] ?? [];
+    expect(ordered.map((n) => n.id)).toEqual(['n1', 'n2']);
+  });
+
+  it('reset limpia también phase/timer/votos', () => {
+    store.applySnapshot(aSnapshot({ myVotes: { 'note-1': 1 }, tally: { 'note-1': 1 } }));
+    store.setTimerState('2026-01-01T00:00:00Z', true, 1000);
+    store.reset();
+
+    expect(store.phase()).toBeNull();
+    expect(store.revealed()).toBe(false);
+    expect(store.timerEndsAt()).toBeNull();
+    expect(store.timerPaused()).toBe(false);
+    expect(store.myVotes()).toEqual({});
+    expect(store.tally()).toBeNull();
+  });
 });

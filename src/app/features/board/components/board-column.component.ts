@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import type { ColumnDto, NoteDto } from '@collabforge/contracts';
+import type { BoardPhase, ColumnDto, NoteDto } from '@collabforge/contracts';
 import { StickyNoteComponent } from './sticky-note.component';
+
+const DELETE_ALLOWED_PHASES: readonly BoardPhase[] = ['COLLECTING', 'GROUPING'];
 
 @Component({
   selector: 'cf-board-column',
@@ -35,7 +37,12 @@ import { StickyNoteComponent } from './sticky-note.component';
           <cf-sticky-note
             [note]="note"
             [canDelete]="canDelete(note)"
+            [voteCount]="voteTally()?.[note.id]"
+            [myVoteCount]="myVotes()[note.id] || 0"
+            [canVote]="canVote()"
             (deleteRequested)="deleteRequested.emit($event)"
+            (voteCast)="voteCast.emit(note.id)"
+            (voteRetracted)="voteRetracted.emit(note.id)"
           />
         } @empty {
           <p class="text-xs text-neutral-500">Sin notas todavía.</p>
@@ -50,14 +57,23 @@ export class BoardColumnComponent {
   readonly canCreate = input(false);
   readonly myUserId = input<string | null>(null);
   readonly myRole = input<'owner' | 'member' | null>(null);
+  readonly phase = input<BoardPhase | null>(null);
+  readonly voteTally = input<Record<string, number> | null>(null);
+  readonly myVotes = input<Record<string, number>>({});
+  readonly canVote = input(false);
 
   readonly noteCreated = output<string>();
   readonly deleteRequested = output<string>();
+  readonly voteCast = output<string>();
+  readonly voteRetracted = output<string>();
 
   readonly draft = new FormControl('', { nonNullable: true, validators: [Validators.required] });
 
   canDelete(note: NoteDto): boolean {
-    return note.author?.userId === this.myUserId() || this.myRole() === 'owner';
+    const roleOk = note.author?.userId === this.myUserId() || this.myRole() === 'owner';
+    const phase = this.phase();
+    const phaseOk = phase === null || DELETE_ALLOWED_PHASES.includes(phase);
+    return roleOk && phaseOk;
   }
 
   submit(): void {

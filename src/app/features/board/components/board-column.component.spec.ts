@@ -103,4 +103,48 @@ describe('BoardColumnComponent', () => {
       ),
     ).toBe(true);
   });
+
+  it('canDelete respeta la fase: permitido en COLLECTING/GROUPING, bloqueado en VOTING/DISCUSSING', () => {
+    fixture.componentRef.setInput('myRole', 'owner');
+    const note = aNote();
+
+    fixture.componentRef.setInput('phase', 'COLLECTING');
+    expect(fixture.componentInstance.canDelete(note)).toBe(true);
+
+    fixture.componentRef.setInput('phase', 'GROUPING');
+    expect(fixture.componentInstance.canDelete(note)).toBe(true);
+
+    fixture.componentRef.setInput('phase', 'VOTING');
+    expect(fixture.componentInstance.canDelete(note)).toBe(false);
+
+    fixture.componentRef.setInput('phase', 'DISCUSSING');
+    expect(fixture.componentInstance.canDelete(note)).toBe(false);
+  });
+
+  it('pasa voteCount/myVoteCount/canVote a cada cf-sticky-note', async () => {
+    fixture.componentRef.setInput('notes', [aNote()]);
+    fixture.componentRef.setInput('voteTally', { 'note-1': 4 });
+    fixture.componentRef.setInput('myVotes', { 'note-1': 1 });
+    fixture.componentRef.setInput('canVote', true);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('4 votos');
+    expect(fixture.nativeElement.textContent).toContain('Votar');
+  });
+
+  it('emite voteCast/voteRetracted con el noteId al reenviar los eventos de cf-sticky-note', () => {
+    fixture.componentRef.setInput('notes', [aNote()]);
+    fixture.componentRef.setInput('canVote', true);
+
+    const castSpy = jasmine.createSpy();
+    const retractSpy = jasmine.createSpy();
+    fixture.componentInstance.voteCast.subscribe(castSpy);
+    fixture.componentInstance.voteRetracted.subscribe(retractSpy);
+
+    fixture.componentInstance.voteCast.emit('note-1');
+    fixture.componentInstance.voteRetracted.emit('note-1');
+
+    expect(castSpy).toHaveBeenCalledWith('note-1');
+    expect(retractSpy).toHaveBeenCalledWith('note-1');
+  });
 });

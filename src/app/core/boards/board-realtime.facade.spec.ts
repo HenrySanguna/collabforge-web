@@ -198,4 +198,110 @@ describe('BoardRealtimeFacade', () => {
 
     expect(facade.cursors()).toEqual({});
   });
+
+  it('actualiza phase/revealed en el store al recibir session:phase-changed', () => {
+    facade.connect('board-1');
+
+    socketHandlers['session:phase-changed']({ phase: 'VOTING', revealed: false });
+
+    expect(store.phase()).toBe('VOTING');
+    expect(store.revealed()).toBe(false);
+  });
+
+  it('actualiza el timer en el store al recibir session:timer-updated', () => {
+    facade.connect('board-1');
+
+    socketHandlers['session:timer-updated']({
+      endsAt: '2026-01-01T00:05:00Z',
+      paused: false,
+      remainingMs: undefined,
+    });
+
+    expect(store.timerEndsAt()).toBe('2026-01-01T00:05:00Z');
+    expect(store.timerPaused()).toBe(false);
+  });
+
+  it('aplica el tally del room al recibir vote:tally', () => {
+    facade.connect('board-1');
+
+    socketHandlers['vote:tally']({ tally: { 'note-1': 3 } });
+
+    expect(store.tally()).toEqual({ 'note-1': 3 });
+  });
+
+  it('aplica el voto propio al recibir vote:my-update', () => {
+    facade.connect('board-1');
+
+    socketHandlers['vote:my-update']({ noteId: 'note-1', count: 2, remaining: 1 });
+
+    expect(store.myVotes()).toEqual({ 'note-1': 2 });
+  });
+
+  it('marca kicked y desconecta al recibir board:kicked', () => {
+    facade.connect('board-1');
+
+    socketHandlers['board:kicked']({ reason: 'KICKED_BY_OWNER' });
+
+    expect(facade.kicked()).toBe(true);
+  });
+
+  it('castVote emite vote:cast con el noteId', async () => {
+    emitWithAckSpy.and.returnValue(Promise.resolve({ ok: true, data: { remaining: 2 } }));
+
+    await facade.castVote('note-1');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('vote:cast', { noteId: 'note-1' });
+  });
+
+  it('castVote no lanza si el ack falla', async () => {
+    emitWithAckSpy.and.returnValue(Promise.reject(new Error('ACK_TIMEOUT')));
+
+    await expectAsync(facade.castVote('note-1')).toBeResolved();
+  });
+
+  it('retractVote emite vote:retract con el noteId', async () => {
+    emitWithAckSpy.and.returnValue(Promise.resolve({ ok: true, data: { remaining: 3 } }));
+
+    await facade.retractVote('note-1');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('vote:retract', { noteId: 'note-1' });
+  });
+
+  it('changePhase emite session:change-phase con la fase destino', async () => {
+    emitWithAckSpy.and.returnValue(Promise.resolve({ ok: true, data: undefined }));
+
+    await facade.changePhase('VOTING');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('session:change-phase', { phase: 'VOTING' });
+  });
+
+  it('startTimer emite session:start-timer con la duración', async () => {
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve({ ok: true, data: { endsAt: '2026-01-01T00:05:00Z' } }),
+    );
+
+    await facade.startTimer(300);
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('session:start-timer', { durationSeconds: 300 });
+  });
+
+  it('pauseTimer/cancelTimer/reveal emiten sus eventos sin payload', async () => {
+    emitWithAckSpy.and.returnValue(Promise.resolve({ ok: true, data: undefined }));
+
+    await facade.pauseTimer();
+    await facade.cancelTimer();
+    await facade.reveal();
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('session:pause-timer', undefined);
+    expect(emitWithAckSpy).toHaveBeenCalledWith('session:cancel-timer', undefined);
+    expect(emitWithAckSpy).toHaveBeenCalledWith('session:reveal', undefined);
+  });
+
+  it('kickMember emite member:kick con el userId', async () => {
+    emitWithAckSpy.and.returnValue(Promise.resolve({ ok: true, data: undefined }));
+
+    await facade.kickMember('user-2');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('member:kick', { userId: 'user-2' });
+  });
 });
