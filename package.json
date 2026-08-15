@@ -29,7 +29,7 @@
   },
   "private": true,
   "dependencies": {
-    "@collabforge/contracts": "file:../collabforge-api/src/contracts",
+    "@collabforge/contracts": "github:HenrySanguna/collabforge-api#contracts-v1.3.0&path:src/contracts",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
     "@angular/core": "^20.3.0",
