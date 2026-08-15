@@ -1,6 +1,7 @@
 {
   "name": "collabforge-web",
   "version": "0.0.0",
+  "packageManager": "pnpm@10.18.0",
   "pnpm": {
     "onlyBuiltDependencies": ["@collabforge/contracts"]
   },
