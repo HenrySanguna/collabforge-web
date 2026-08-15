@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
         with: { node-version: '22', cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run build -- --configuration=production
+      - run: pnpm run build --configuration=production
         # los presupuestos de bundle hacen fallar el build si se exceden
       - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b
         with: { name: dist, path: dist/collabforge-web/browser, retention-days: 7 }
