@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
-import type { CreateNoteAck, DeleteNoteAck } from '@collabforge/contracts';
+import type {
+  ActionItemDto,
+  CreateActionItemAck,
+  CreateNoteAck,
+  DeleteActionItemAck,
+  DeleteNoteAck,
+  UpdateActionItemAck,
+} from '@collabforge/contracts';
 import { BoardRealtimeFacade } from './board-realtime.facade';
 import { BoardStore } from './board.store';
 import { AuthStore } from '../auth/auth.store';
@@ -56,7 +63,7 @@ describe('BoardRealtimeFacade', () => {
 
   it('conecta y aplica el snapshot al recibir board:sync', () => {
     facade.connect('board-1');
-    expect(connectSpy).toHaveBeenCalledWith('board-1', 'tok');
+    expect(connectSpy).toHaveBeenCalledWith('board-1', 'tok', jasmine.any(String));
 
     socketHandlers['board:sync']({
       board: {
@@ -303,5 +310,150 @@ describe('BoardRealtimeFacade', () => {
     await facade.kickMember('user-2');
 
     expect(emitWithAckSpy).toHaveBeenCalledWith('member:kick', { userId: 'user-2' });
+  });
+
+  it('aplica un action item al recibir action-item:created', () => {
+    facade.connect('board-1');
+
+    const item: ActionItemDto = {
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'open',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    socketHandlers['action-item:created'](item);
+
+    expect(store.actionItems()).toEqual([item]);
+  });
+
+  it('aplica un action item al recibir action-item:updated', () => {
+    facade.connect('board-1');
+
+    const item: ActionItemDto = {
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'done',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    socketHandlers['action-item:updated'](item);
+
+    expect(store.actionItems()).toEqual([item]);
+  });
+
+  it('elimina un action item al recibir action-item:deleted', () => {
+    facade.connect('board-1');
+    store.upsertActionItem({
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'open',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+
+    socketHandlers['action-item:deleted']({ id: 'item-1' });
+
+    expect(store.actionItems()).toEqual([]);
+  });
+
+  it('createActionItem emite action-item:create y aplica el item del ack', async () => {
+    const item: ActionItemDto = {
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: 'user-2',
+      status: 'open',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve<CreateActionItemAck>({ ok: true, data: { item } }),
+    );
+
+    await facade.createActionItem('Seguir con X', 'user-2');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('action-item:create', {
+      text: 'Seguir con X',
+      assigneeId: 'user-2',
+    });
+    expect(store.actionItems()).toEqual([item]);
+  });
+
+  it('createActionItem no aplica nada si el ack falla', async () => {
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve<CreateActionItemAck>({
+        ok: false,
+        error: { code: 'FORBIDDEN_ROLE', message: 'x' },
+      }),
+    );
+
+    await facade.createActionItem('Seguir con X');
+
+    expect(store.actionItems()).toEqual([]);
+  });
+
+  it('updateActionItem emite action-item:update y aplica el item del ack', async () => {
+    const item: ActionItemDto = {
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'done',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve<UpdateActionItemAck>({ ok: true, data: { item } }),
+    );
+
+    await facade.updateActionItem({ id: 'item-1', status: 'done' });
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('action-item:update', {
+      id: 'item-1',
+      status: 'done',
+    });
+    expect(store.actionItems()).toEqual([item]);
+  });
+
+  it('deleteActionItem emite action-item:delete y elimina el item del store en éxito', async () => {
+    store.upsertActionItem({
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'open',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve<DeleteActionItemAck>({ ok: true, data: undefined }),
+    );
+
+    await facade.deleteActionItem('item-1');
+
+    expect(emitWithAckSpy).toHaveBeenCalledWith('action-item:delete', { id: 'item-1' });
+    expect(store.actionItems()).toEqual([]);
+  });
+
+  it('deleteActionItem no elimina el item si el ack falla', async () => {
+    store.upsertActionItem({
+      id: 'item-1',
+      text: 'Seguir con X',
+      assigneeId: null,
+      status: 'open',
+      createdBy: 'user-1',
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+    emitWithAckSpy.and.returnValue(
+      Promise.resolve<DeleteActionItemAck>({
+        ok: false,
+        error: { code: 'FORBIDDEN_ROLE', message: 'x' },
+      }),
+    );
+
+    await facade.deleteActionItem('item-1');
+
+    expect(store.actionItems().length).toBe(1);
   });
 });

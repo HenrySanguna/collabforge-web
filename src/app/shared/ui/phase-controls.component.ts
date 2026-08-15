@@ -55,7 +55,11 @@ const MAX_DURATION_MINUTES = 60;
         >
           Iniciar temporizador
         </button>
-        <button type="button" class="cf-focus-ring rounded border px-3 py-1" (click)="pauseTimer.emit()">
+        <button
+          type="button"
+          class="cf-focus-ring rounded border px-3 py-1"
+          (click)="pauseTimer.emit()"
+        >
           Pausar
         </button>
         <button
@@ -67,7 +71,11 @@ const MAX_DURATION_MINUTES = 60;
         </button>
 
         @if (canReveal()) {
-          <button type="button" class="cf-focus-ring rounded border px-3 py-1" (click)="reveal.emit()">
+          <button
+            type="button"
+            class="cf-focus-ring rounded border px-3 py-1"
+            (click)="reveal.emit()"
+          >
             Revelar autoría
           </button>
         }

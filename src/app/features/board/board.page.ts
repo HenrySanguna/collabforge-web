@@ -20,6 +20,14 @@ import { CursorLayerComponent } from '../../shared/ui/cursor-layer.component';
 import { SessionTimerComponent } from '../../shared/ui/session-timer.component';
 import { PhaseControlsComponent } from '../../shared/ui/phase-controls.component';
 import { VoteBudgetComponent } from '../../shared/ui/vote-budget.component';
+import {
+  ActionItemsPanelComponent,
+  type ActionItemCreateRequest,
+  type ActionItemStatusToggleRequest,
+} from './components/action-items-panel.component';
+import { toMarkdown } from '../../core/boards/board-export.util';
+import { downloadMarkdown } from '../../core/util/download.util';
+import { AsyncStateComponent } from '../../shared/ui/async-state.component';
 import type { BoardDetailDto } from '../../core/boards/models/board.models';
 
 @Component({
@@ -34,18 +42,20 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
     SessionTimerComponent,
     PhaseControlsComponent,
     VoteBudgetComponent,
+    ActionItemsPanelComponent,
+    AsyncStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loading()) {
-      <p class="p-8 text-sm text-neutral-500">Cargando tablero…</p>
+      <cf-async-state state="loading" message="Cargando tablero…" />
     } @else if (board(); as b) {
       <main class="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-8">
-        <header class="flex items-center justify-between">
+        <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <a routerLink="/dashboard" class="cf-focus-ring text-sm underline">← Mis tableros</a>
             <h1 class="text-2xl font-semibold">{{ b.title }}</h1>
-            <p class="text-sm text-neutral-500">Fase: {{ phase() }}</p>
+            <p class="text-sm text-foreground-muted" aria-live="polite">Fase: {{ phase() }}</p>
             <cf-connection-banner [state]="realtime.connectionState()" />
             <cf-session-timer
               [endsAt]="store.timerEndsAt()"
@@ -89,7 +99,28 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
           (reveal)="reveal()"
         />
 
-        <div class="relative grid gap-4 sm:grid-cols-3">
+        @defer (when phase() === 'DISCUSSING') {
+          <cf-action-items-panel
+            [actionItems]="store.actionItems()"
+            [participants]="store.participants()"
+            [isOwner]="b.myRole === 'owner'"
+            [phase]="phase()"
+            (itemCreated)="createActionItem($event)"
+            (itemStatusToggled)="updateActionItemStatus($event)"
+            (itemDeleted)="deleteActionItem($event)"
+          />
+          <button
+            type="button"
+            class="cf-focus-ring self-start rounded-md border px-4 py-2 text-sm"
+            (click)="exportMarkdown()"
+          >
+            Exportar a Markdown
+          </button>
+        } @placeholder {
+          <span></span>
+        }
+
+        <div class="relative grid grid-cols-1 gap-4 sm:grid-cols-3">
           @for (column of store.columns(); track column.id) {
             <cf-board-column
               [column]="column"
@@ -117,7 +148,12 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
         </div>
       </main>
     } @else {
-      <p class="p-8 text-sm text-red-600">No se pudo cargar el tablero.</p>
+      <cf-async-state
+        state="error"
+        message="No se pudo cargar el tablero."
+        retryLabel="Reintentar"
+        (retry)="retryLoad()"
+      />
     }
   `,
 })
@@ -143,13 +179,28 @@ export default class BoardPage {
     () => this.phase() === 'VOTING' && this.votesSpent() < this.store.voteBudget(),
   );
 
+  private slug: string | null = null;
+
   constructor() {
-    const slug = this.route.snapshot.paramMap.get('slug');
-    if (!slug) {
+    this.slug = this.route.snapshot.paramMap.get('slug');
+    if (!this.slug) {
       void this.router.navigateByUrl('/dashboard');
       return;
     }
 
+    this.loadBoard(this.slug);
+
+    this.destroyRef.onDestroy(() => this.realtime.disconnect());
+
+    effect(() => {
+      if (this.realtime.kicked()) {
+        void this.router.navigate(['/dashboard'], { queryParams: { removed: 'true' } });
+      }
+    });
+  }
+
+  private loadBoard(slug: string): void {
+    this.loading.set(true);
     this.boardsService.bySlug(slug).subscribe({
       next: (board) => {
         this.board.set(board);
@@ -159,14 +210,11 @@ export default class BoardPage {
       },
       error: () => this.loading.set(false),
     });
+  }
 
-    this.destroyRef.onDestroy(() => this.realtime.disconnect());
-
-    effect(() => {
-      if (this.realtime.kicked()) {
-        void this.router.navigate(['/dashboard'], { queryParams: { removed: 'true' } });
-      }
-    });
+  retryLoad(): void {
+    if (!this.slug) return;
+    this.loadBoard(this.slug);
   }
 
   generateInvite(): void {
@@ -212,5 +260,35 @@ export default class BoardPage {
 
   reveal(): void {
     void this.realtime.reveal();
+  }
+
+  createActionItem(request: ActionItemCreateRequest): void {
+    void this.realtime.createActionItem(request.text, request.assigneeId);
+  }
+
+  updateActionItemStatus(request: ActionItemStatusToggleRequest): void {
+    void this.realtime.updateActionItem({ id: request.id, status: request.status });
+  }
+
+  deleteActionItem(id: string): void {
+    void this.realtime.deleteActionItem(id);
+  }
+
+  exportMarkdown(): void {
+    const board = this.board();
+    if (!board) return;
+
+    const markdown = toMarkdown({
+      title: board.title,
+      slug: board.slug,
+      revealed: this.store.revealed(),
+      columns: this.store.columns(),
+      notes: this.store.notes(),
+      tally: this.store.tally(),
+      actionItems: this.store.actionItems(),
+      participants: this.store.participants(),
+    });
+
+    downloadMarkdown(board.slug, markdown);
   }
 }

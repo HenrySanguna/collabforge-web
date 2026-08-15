@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { AsyncStateComponent } from '../../shared/ui/async-state.component';
 
 interface LoginForm {
   email: FormControl<string>;
@@ -11,7 +12,7 @@ interface LoginForm {
 @Component({
   selector: 'cf-login-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AsyncStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
@@ -39,7 +40,7 @@ interface LoginForm {
         </label>
 
         @if (error(); as message) {
-          <p class="text-sm text-red-600" role="alert">{{ message }}</p>
+          <cf-async-state state="error" [message]="message" />
         }
 
         <button

@@ -1,16 +1,21 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type {
   Ack,
+  ActionItemDto,
   BoardPhase,
   BoardSnapshot,
   CastVoteAck,
+  CreateActionItemAck,
   CreateNoteAck,
+  DeleteActionItemAck,
   DeleteNoteAck,
   MoveNoteAck,
   NoteDto,
   NoteMovedPayload,
   RetractVoteAck,
   StartTimerAck,
+  UpdateActionItemAck,
+  UpdateActionItemPayload,
   UpdateNoteAck,
 } from '@collabforge/contracts';
 import { RealtimeService } from '../realtime/realtime.service';
@@ -39,7 +44,7 @@ export class BoardRealtimeFacade {
     const token = this.auth.accessToken();
     if (!token) throw new Error('No access token available.');
 
-    const socket = this.realtime.connect(boardId, token);
+    const socket = this.realtime.connect(boardId, token, crypto.randomUUID());
 
     socket.on('board:sync', (snapshot: BoardSnapshot) => this.store.applySnapshot(snapshot));
     socket.on('note:created', (note: NoteDto) => this.store.upsertNote(note));
@@ -63,6 +68,9 @@ export class BoardRealtimeFacade {
     // por viewer inmediatamente después, y ese sync ya trae notas/autoría/tally revelados.
     socket.on('vote:tally', ({ tally }) => this.store.applyTally(tally));
     socket.on('vote:my-update', ({ noteId, count }) => this.store.applyMyVoteUpdate(noteId, count));
+    socket.on('action-item:created', (item: ActionItemDto) => this.store.upsertActionItem(item));
+    socket.on('action-item:updated', (item: ActionItemDto) => this.store.upsertActionItem(item));
+    socket.on('action-item:deleted', ({ id }) => this.store.removeActionItem(id));
     socket.on('board:kicked', () => {
       // Se marca kicked=true y se cierra la conexión, pero SIN pasar por disconnect():
       // ese método resetea _kicked a false (para dejarlo limpio antes de conectar a otro
@@ -225,6 +233,37 @@ export class BoardRealtimeFacade {
     await this.realtime
       .emitWithAck<'member:kick', Ack<void>>('member:kick', { userId })
       .catch((): Ack<void> | null => null);
+  }
+
+  // Acciones de owner (igual que changePhase/kickMember): el backend es la autoridad real,
+  // así que se aplica el item del ack directo al store en vez de optimismo local; los demás
+  // clientes reciben el mismo estado vía los broadcasts action-item:created/updated/deleted
+  // escuchados en connect().
+  async createActionItem(text: string, assigneeId?: string | null): Promise<void> {
+    const ack = await this.realtime
+      .emitWithAck<'action-item:create', CreateActionItemAck>('action-item:create', {
+        text,
+        ...(assigneeId !== undefined ? { assigneeId } : {}),
+      })
+      .catch((): CreateActionItemAck | null => null);
+
+    if (ack?.ok) this.store.upsertActionItem(ack.data.item);
+  }
+
+  async updateActionItem(payload: UpdateActionItemPayload): Promise<void> {
+    const ack = await this.realtime
+      .emitWithAck<'action-item:update', UpdateActionItemAck>('action-item:update', payload)
+      .catch((): UpdateActionItemAck | null => null);
+
+    if (ack?.ok) this.store.upsertActionItem(ack.data.item);
+  }
+
+  async deleteActionItem(id: string): Promise<void> {
+    const ack = await this.realtime
+      .emitWithAck<'action-item:delete', DeleteActionItemAck>('action-item:delete', { id })
+      .catch((): DeleteActionItemAck | null => null);
+
+    if (ack?.ok) this.store.removeActionItem(id);
   }
 
   private applyMove(payload: NoteMovedPayload): void {

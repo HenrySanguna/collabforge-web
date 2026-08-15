@@ -21,9 +21,9 @@ describe('PhaseControlsComponent', () => {
   }
 
   function buttonLabels(): string[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLElement>).map(
-      (b) => b.textContent?.trim() ?? '',
-    );
+    return Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLElement>,
+    ).map((b) => b.textContent?.trim() ?? '');
   }
 
   it('no renderiza nada para un miembro que no es owner', async () => {

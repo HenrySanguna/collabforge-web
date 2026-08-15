@@ -1,5 +1,5 @@
 import { BoardStore } from './board.store';
-import type { BoardSnapshot, NoteDto, ParticipantDto } from '@collabforge/contracts';
+import type { ActionItemDto, BoardSnapshot, NoteDto, ParticipantDto } from '@collabforge/contracts';
 
 function aParticipant(overrides: Partial<ParticipantDto> = {}): ParticipantDto {
   return {
@@ -35,6 +35,18 @@ function aSnapshot(overrides: Partial<BoardSnapshot> = {}): BoardSnapshot {
     actionItems: [],
     myRole: 'owner',
     serverTime: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+function anActionItem(overrides: Partial<ActionItemDto> = {}): ActionItemDto {
+  return {
+    id: 'item-1',
+    text: 'Seguir con X',
+    assigneeId: null,
+    status: 'open',
+    createdBy: 'user-1',
+    createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
   };
 }
@@ -302,5 +314,59 @@ describe('BoardStore', () => {
     expect(store.timerPaused()).toBe(false);
     expect(store.myVotes()).toEqual({});
     expect(store.tally()).toBeNull();
+  });
+
+  it('applySnapshot arma los action items desde el snapshot', () => {
+    store.applySnapshot(aSnapshot({ actionItems: [anActionItem()] }));
+    expect(store.actionItems()).toEqual([anActionItem()]);
+  });
+
+  it('upsertActionItem agrega un action item nuevo', () => {
+    store.upsertActionItem(anActionItem());
+    expect(store.actionItems()).toEqual([anActionItem()]);
+  });
+
+  it('upsertActionItem reemplaza un action item existente por id', () => {
+    store.upsertActionItem(anActionItem());
+    store.upsertActionItem(anActionItem({ status: 'done' }));
+
+    expect(store.actionItems().length).toBe(1);
+    expect(store.actionItems()[0].status).toBe('done');
+  });
+
+  it('removeActionItem elimina un action item por id', () => {
+    store.upsertActionItem(anActionItem());
+    store.removeActionItem('item-1');
+
+    expect(store.actionItems()).toEqual([]);
+  });
+
+  it('seedFromRest arranca con action items vacíos', () => {
+    store.upsertActionItem(anActionItem());
+    store.seedFromRest({
+      id: 'board-1',
+      slug: 'retro-abc',
+      title: 'Retro',
+      phase: 'COLLECTING',
+      isArchived: false,
+      myRole: 'member',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      ownerId: 'user-1',
+      revealed: false,
+      voteBudget: 3,
+      allowMultiVote: false,
+      liveTally: false,
+      columns: [{ id: 'col-1', title: 'Start', color: '#fff', position: 0 }],
+    });
+
+    expect(store.actionItems()).toEqual([]);
+  });
+
+  it('reset limpia también los action items', () => {
+    store.upsertActionItem(anActionItem());
+    store.reset();
+
+    expect(store.actionItems()).toEqual([]);
   });
 });

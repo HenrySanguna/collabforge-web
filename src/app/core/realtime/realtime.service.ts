@@ -17,12 +17,12 @@ export class RealtimeService {
 
   readonly state = this._state.asReadonly();
 
-  connect(boardId: string, token: string): BoardSocket {
+  connect(boardId: string, token: string, correlationId?: string): BoardSocket {
     this.disconnect();
     this._state.set('connecting');
 
     const socket: BoardSocket = io(`${environment.wsUrl}/board`, {
-      auth: { token },
+      auth: correlationId ? { token, correlationId } : { token },
       query: { boardId },
       transports: ['websocket', 'polling'],
       withCredentials: true,

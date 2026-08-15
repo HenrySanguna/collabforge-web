@@ -86,4 +86,28 @@ describe('DashboardPage', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith(['/board', 'nueva-retro-xyz']);
   });
+
+  it('muestra un error accesible y distinto del estado vacío cuando falla la carga, con reintento', async () => {
+    fixture.detectChanges();
+    httpMock
+      .expectOne(`${environment.apiUrl}/boards?page=1&limit=20`)
+      .flush('boom', { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable();
+
+    const alert = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain('No se pudieron cargar tus tableros.');
+    expect(fixture.nativeElement.textContent).not.toContain('Todavía no tienes tableros');
+
+    const retryButton = alert?.querySelector('button') as HTMLButtonElement;
+    expect(retryButton?.textContent?.trim()).toBe('Reintentar');
+    retryButton.click();
+
+    httpMock
+      .expectOne(`${environment.apiUrl}/boards?page=1&limit=20`)
+      .flush({ items: [], page: 1, limit: 20, total: 0 });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Todavía no tienes tableros');
+  });
 });

@@ -1,5 +1,11 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { BoardPhase, BoardSnapshot, NoteDto, ParticipantDto } from '@collabforge/contracts';
+import type {
+  ActionItemDto,
+  BoardPhase,
+  BoardSnapshot,
+  NoteDto,
+  ParticipantDto,
+} from '@collabforge/contracts';
 import type { BoardDetailDto } from './models/board.models';
 
 export interface OptimisticNote extends NoteDto {
@@ -25,6 +31,10 @@ export class BoardStore {
   private readonly _myVotes = signal<Record<string, number>>({});
   private readonly _tally = signal<Record<string, number> | null>(null);
 
+  // actionItems: igual que notes, dict por id + broadcasts dedicados (action-item:created/
+  // updated/deleted) además del snapshot completo.
+  private readonly _actionItems = signal<Record<string, ActionItemDto>>({});
+
   readonly snapshot = this._snapshot.asReadonly();
   readonly board = computed(() => this._snapshot()?.board ?? null);
   readonly columns = computed(() => this._snapshot()?.columns ?? []);
@@ -39,6 +49,7 @@ export class BoardStore {
   readonly timerRemainingMs = this._timerRemainingMs.asReadonly();
   readonly myVotes = this._myVotes.asReadonly();
   readonly tally = this._tally.asReadonly();
+  readonly actionItems = computed(() => Object.values(this._actionItems()));
 
   // voteBudget/allowMultiVote/liveTally/serverTime no tienen evento dedicado propio:
   // siguen viviendo únicamente en el snapshot, así que son computed() puros sobre board().
@@ -102,6 +113,7 @@ export class BoardStore {
     this._timerRemainingMs.set(undefined);
     this._myVotes.set({});
     this._tally.set(null);
+    this._actionItems.set({});
   }
 
   applySnapshot(snapshot: BoardSnapshot): void {
@@ -120,6 +132,10 @@ export class BoardStore {
     this._timerRemainingMs.set(undefined);
     this._myVotes.set(snapshot.myVotes);
     this._tally.set(snapshot.tally);
+
+    const actionItemsById: Record<string, ActionItemDto> = {};
+    for (const item of snapshot.actionItems) actionItemsById[item.id] = item;
+    this._actionItems.set(actionItemsById);
   }
 
   setParticipants(participants: ParticipantDto[]): void {
@@ -174,6 +190,18 @@ export class BoardStore {
     return this._notes()[noteId];
   }
 
+  upsertActionItem(item: ActionItemDto): void {
+    this._actionItems.update((items) => ({ ...items, [item.id]: item }));
+  }
+
+  removeActionItem(id: string): void {
+    this._actionItems.update((items) => {
+      const next = { ...items };
+      delete next[id];
+      return next;
+    });
+  }
+
   reset(): void {
     this._snapshot.set(null);
     this._notes.set({});
@@ -185,5 +213,6 @@ export class BoardStore {
     this._timerRemainingMs.set(undefined);
     this._myVotes.set({});
     this._tally.set(null);
+    this._actionItems.set({});
   }
 }

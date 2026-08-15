@@ -7,6 +7,7 @@ import { BoardsService } from '../../core/boards/boards.service';
 import { BOARD_TEMPLATE_OPTIONS } from '../../core/boards/board-templates';
 import type { BoardSummaryDto } from '../../core/boards/models/board.models';
 import { BoardCardComponent } from './components/board-card.component';
+import { AsyncStateComponent } from '../../shared/ui/async-state.component';
 
 interface CreateBoardForm {
   title: FormControl<string>;
@@ -16,11 +17,11 @@ interface CreateBoardForm {
 @Component({
   selector: 'cf-dashboard-page',
   standalone: true,
-  imports: [ReactiveFormsModule, BoardCardComponent],
+  imports: [ReactiveFormsModule, BoardCardComponent, AsyncStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-8">
-      <header class="flex items-center justify-between">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-2xl font-semibold">Hola, {{ store.user()?.name }}</h1>
         <button type="button" class="cf-focus-ring rounded-md border px-4 py-2" (click)="logout()">
           Cerrar sesión
@@ -60,7 +61,7 @@ interface CreateBoardForm {
           </label>
 
           @if (createError(); as message) {
-            <p class="text-sm text-red-600" role="alert">{{ message }}</p>
+            <p class="text-sm text-danger" role="alert">{{ message }}</p>
           }
 
           <button
@@ -74,11 +75,21 @@ interface CreateBoardForm {
       }
 
       @if (loading()) {
-        <p class="text-sm text-neutral-500">Cargando tableros…</p>
+        <cf-async-state state="loading" message="Cargando tableros…" />
+      } @else if (loadError()) {
+        <cf-async-state
+          state="error"
+          message="No se pudieron cargar tus tableros."
+          retryLabel="Reintentar"
+          (retry)="retryLoad()"
+        />
       } @else if (boards().length === 0) {
-        <p class="text-sm text-neutral-500">Todavía no tienes tableros. Crea el primero arriba.</p>
+        <cf-async-state
+          state="empty"
+          message="Todavía no tienes tableros. Crea el primero arriba."
+        />
       } @else {
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           @for (board of boards(); track board.id) {
             <cf-board-card [board]="board" (boardSelected)="openBoard(board)" />
           }
@@ -97,6 +108,7 @@ export default class DashboardPage {
 
   readonly boards = signal<BoardSummaryDto[]>([]);
   readonly loading = signal(true);
+  readonly loadError = signal(false);
   readonly showCreateForm = signal(false);
   readonly creating = signal(false);
   readonly createError = signal<string | null>(null);
@@ -107,13 +119,27 @@ export default class DashboardPage {
   });
 
   constructor() {
+    this.fetchBoards();
+  }
+
+  private fetchBoards(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
+
     this.boardsService.list().subscribe({
       next: (result) => {
         this.boards.set(result.items);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.loadError.set(true);
+      },
     });
+  }
+
+  retryLoad(): void {
+    this.fetchBoards();
   }
 
   submit(): void {

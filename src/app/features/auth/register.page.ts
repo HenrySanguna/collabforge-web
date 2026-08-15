@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { AsyncStateComponent } from '../../shared/ui/async-state.component';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}$/;
 
@@ -14,7 +15,7 @@ interface RegisterForm {
 @Component({
   selector: 'cf-register-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AsyncStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
@@ -48,14 +49,15 @@ interface RegisterForm {
             formControlName="password"
             class="cf-focus-ring rounded-md border px-3 py-2"
             autocomplete="new-password"
+            aria-describedby="password-hint"
           />
-          <span class="text-xs text-neutral-500">
+          <span id="password-hint" class="text-xs text-foreground-muted">
             Mínimo 10 caracteres, con mayúscula, minúscula y un dígito.
           </span>
         </label>
 
         @if (error(); as message) {
-          <p class="text-sm text-red-600" role="alert">{{ message }}</p>
+          <cf-async-state state="error" [message]="message" />
         }
 
         <button
