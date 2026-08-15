@@ -19,6 +19,12 @@ module.exports = function (config) {
       dir: require('path').join(__dirname, './coverage/collabforge-web'),
       subdir: '.',
       reporters: [{ type: 'html' }, { type: 'text-summary' }, { type: 'lcovonly' }],
+      check: {
+        global: {
+          lines: 80,
+          branches: 55,
+        },
+      },
     },
     reporters: ['progress', 'kjhtml'],
     port: 9876,
