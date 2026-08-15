@@ -2,6 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('cf-theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          /* localStorage unavailable (e.g. blocked) — fall back to light */
+        }
+      })();
+    </script>
     <title>CollabForge</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
