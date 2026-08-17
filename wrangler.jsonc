@@ -6,6 +6,6 @@
     "not_found_handling": "single-page-application"
   },
   "build": {
-    "command": "pnpm run build --configuration=production"
+    "command": "pnpm run build --configuration=$([ \"$WORKERS_CI_BRANCH\" = \"main\" ] && echo production || echo staging)"
   }
 }
