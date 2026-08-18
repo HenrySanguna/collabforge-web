@@ -115,6 +115,22 @@ describe('ActionItemsPanelComponent', () => {
     expect(spy).toHaveBeenCalledWith({ text: 'Nuevo item', assigneeId: null });
   });
 
+  it('intercepta el submit nativo del form y no deja que el navegador navegue', async () => {
+    fixture.componentRef.setInput('isOwner', true);
+    await fixture.whenStable();
+
+    fixture.componentInstance.draftText.setValue('Nuevo item');
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.itemCreated.subscribe(spy);
+
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+    form.dispatchEvent(submitEvent);
+
+    expect(spy).toHaveBeenCalledWith({ text: 'Nuevo item', assigneeId: null });
+    expect(submitEvent.defaultPrevented).toBe(true);
+  });
+
   it('toggleStatus emite itemStatusToggled con el status invertido', () => {
     const spy = jasmine.createSpy();
     fixture.componentInstance.itemStatusToggled.subscribe(spy);

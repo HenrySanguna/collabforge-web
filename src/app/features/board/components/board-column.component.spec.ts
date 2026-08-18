@@ -80,6 +80,22 @@ describe('BoardColumnComponent', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('intercepta el submit nativo del form y no deja que el navegador navegue', async () => {
+    fixture.componentRef.setInput('canCreate', true);
+    await fixture.whenStable();
+
+    fixture.componentInstance.draft.setValue('Nueva nota');
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.noteCreated.subscribe(spy);
+
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+    form.dispatchEvent(submitEvent);
+
+    expect(spy).toHaveBeenCalledWith('Nueva nota');
+    expect(submitEvent.defaultPrevented).toBe(true);
+  });
+
   it('canDelete permite al autor y al owner, no a un miembro cualquiera', () => {
     fixture.componentRef.setInput('myUserId', 'user-1');
     fixture.componentRef.setInput('myRole', 'member');

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { BoardPhase, ColumnDto, NoteDto } from '@collabforge/contracts';
 import { StickyNoteComponent } from './sticky-note.component';
 
@@ -15,10 +15,10 @@ const DELETE_ALLOWED_PHASES: readonly BoardPhase[] = ['COLLECTING', 'GROUPING'];
       <h2 class="font-semibold" [style.color]="column().color">{{ column().title }}</h2>
 
       @if (canCreate()) {
-        <form class="flex gap-2" (ngSubmit)="submit()">
+        <form class="flex gap-2" [formGroup]="draftForm" (ngSubmit)="submit()">
           <input
             class="cf-focus-ring flex-1 rounded border px-2 py-1 text-sm"
-            [formControl]="draft"
+            formControlName="draft"
             placeholder="Nueva nota…"
             maxlength="500"
           />
@@ -68,6 +68,7 @@ export class BoardColumnComponent {
   readonly voteRetracted = output<string>();
 
   readonly draft = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+  readonly draftForm = new FormGroup({ draft: this.draft });
 
   canDelete(note: NoteDto): boolean {
     const roleOk = note.author?.userId === this.myUserId() || this.myRole() === 'owner';

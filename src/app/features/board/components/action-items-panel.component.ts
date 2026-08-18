@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { ActionItemDto, BoardPhase, ParticipantDto } from '@collabforge/contracts';
 
 export interface ActionItemCreateRequest {
@@ -23,16 +23,16 @@ export interface ActionItemStatusToggleRequest {
         <h2 class="font-semibold">Action items</h2>
 
         @if (isOwner()) {
-          <form class="flex flex-wrap gap-2" (ngSubmit)="submitCreate()">
+          <form class="flex flex-wrap gap-2" [formGroup]="draftForm" (ngSubmit)="submitCreate()">
             <input
               class="cf-focus-ring flex-1 rounded border px-2 py-1 text-sm"
-              [formControl]="draftText"
+              formControlName="text"
               placeholder="Nuevo action item…"
               maxlength="2000"
             />
             <select
               class="cf-focus-ring rounded border px-2 py-1 text-sm"
-              [formControl]="draftAssigneeId"
+              formControlName="assigneeId"
             >
               <option value="">Sin asignar</option>
               @for (p of participants(); track p.userId) {
@@ -96,6 +96,7 @@ export class ActionItemsPanelComponent {
     validators: [Validators.required],
   });
   readonly draftAssigneeId = new FormControl('', { nonNullable: true });
+  readonly draftForm = new FormGroup({ text: this.draftText, assigneeId: this.draftAssigneeId });
 
   readonly visible = computed(() => this.phase() === 'DISCUSSING');
   readonly items = computed(() => this.actionItems());
