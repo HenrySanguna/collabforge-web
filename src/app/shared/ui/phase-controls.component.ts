@@ -24,47 +24,47 @@ const MAX_DURATION_MINUTES = 60;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOwner()) {
-      <div class="flex flex-wrap items-center gap-2 rounded-md border p-3 text-sm">
+      <div class="flex flex-wrap items-center gap-2 rounded-md border border-border p-3 text-sm">
         <span class="font-medium">Fase: {{ phaseLabel() }}</span>
 
         @for (next of nextPhases(); track next) {
           <button
             type="button"
-            class="cf-focus-ring rounded border px-3 py-1"
+            class="cf-focus-ring rounded border border-border px-3 py-1"
             (click)="phaseChange.emit(next)"
           >
             → {{ phaseLabels[next] }}
           </button>
         }
 
-        <span class="mx-1 h-4 w-px bg-neutral-300"></span>
+        <span class="mx-1 h-4 w-px bg-border"></span>
 
         <input
           type="number"
-          class="cf-focus-ring w-16 rounded border px-2 py-1"
+          class="cf-focus-ring w-16 appearance-none rounded border border-border px-2 py-1"
           [min]="minDuration"
           [max]="maxDuration"
           [value]="durationMinutes()"
           (input)="onDurationInput($event)"
         />
-        <span class="text-xs text-neutral-500">min</span>
+        <span class="text-xs text-foreground-muted">min</span>
         <button
           type="button"
-          class="cf-focus-ring rounded border px-3 py-1"
+          class="cf-focus-ring rounded border border-border px-3 py-1"
           (click)="emitStartTimer()"
         >
           Iniciar temporizador
         </button>
         <button
           type="button"
-          class="cf-focus-ring rounded border px-3 py-1"
+          class="cf-focus-ring rounded border border-border px-3 py-1"
           (click)="pauseTimer.emit()"
         >
           Pausar
         </button>
         <button
           type="button"
-          class="cf-focus-ring rounded border px-3 py-1"
+          class="cf-focus-ring rounded border border-border px-3 py-1"
           (click)="cancelTimer.emit()"
         >
           Cancelar
@@ -73,7 +73,7 @@ const MAX_DURATION_MINUTES = 60;
         @if (canReveal()) {
           <button
             type="button"
-            class="cf-focus-ring rounded border px-3 py-1"
+            class="cf-focus-ring rounded border border-border px-3 py-1"
             (click)="reveal.emit()"
           >
             Revelar autoría

@@ -6,19 +6,19 @@ import type { NoteDto } from '@collabforge/contracts';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="rounded-md border bg-white p-3 shadow-sm" [class.opacity-60]="note().pending">
+    <article class="rounded-md border border-border bg-surface p-3" [class.opacity-60]="note().pending">
       <p class="text-sm whitespace-pre-wrap">{{ note().text }}</p>
 
       @if (note().author; as author) {
-        <p class="mt-2 text-xs text-neutral-500">{{ author.name }}</p>
+        <p class="mt-2 text-xs text-foreground-muted">{{ author.name }}</p>
       } @else {
-        <p class="mt-2 text-xs text-neutral-400">Anónimo</p>
+        <p class="mt-2 text-xs text-foreground-muted">Anónimo</p>
       }
 
       @if (canDelete()) {
         <button
           type="button"
-          class="cf-focus-ring mt-2 text-xs text-red-600 underline"
+          class="cf-focus-ring mt-2 text-xs text-danger underline"
           (click)="deleteRequested.emit(note().id)"
         >
           Eliminar
@@ -30,7 +30,7 @@ import type { NoteDto } from '@collabforge/contracts';
           @if (canVote()) {
             <button
               type="button"
-              class="cf-focus-ring rounded border px-2 py-0.5"
+              class="cf-focus-ring rounded border border-border px-2 py-0.5"
               (click)="voteCast.emit()"
             >
               Votar
@@ -39,7 +39,7 @@ import type { NoteDto } from '@collabforge/contracts';
           @if (canRetract() && myVoteCount() > 0) {
             <button
               type="button"
-              class="cf-focus-ring rounded border px-2 py-0.5"
+              class="cf-focus-ring rounded border border-border px-2 py-0.5"
               (click)="voteRetracted.emit()"
             >
               Quitar voto
@@ -49,7 +49,7 @@ import type { NoteDto } from '@collabforge/contracts';
             <span>{{ voteCount() }} votos</span>
           }
           @if (myVoteCount() > 0) {
-            <span class="text-neutral-500">Tú: {{ myVoteCount() }}</span>
+            <span class="font-mono tabular-nums text-foreground-muted">Tú: {{ myVoteCount() }}</span>
           }
         </div>
       }

@@ -27,7 +27,7 @@ interface RegisterForm {
           <input
             type="text"
             formControlName="name"
-            class="cf-focus-ring rounded-md border px-3 py-2"
+            class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             autocomplete="name"
           />
         </label>
@@ -37,7 +37,7 @@ interface RegisterForm {
           <input
             type="email"
             formControlName="email"
-            class="cf-focus-ring rounded-md border px-3 py-2"
+            class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             autocomplete="email"
           />
         </label>
@@ -47,7 +47,7 @@ interface RegisterForm {
           <input
             type="password"
             formControlName="password"
-            class="cf-focus-ring rounded-md border px-3 py-2"
+            class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             autocomplete="new-password"
             aria-describedby="password-hint"
           />

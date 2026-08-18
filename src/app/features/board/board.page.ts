@@ -79,13 +79,13 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
             @if (b.myRole === 'owner') {
               <button
                 type="button"
-                class="cf-focus-ring rounded-md border px-4 py-2 text-sm"
+                class="cf-focus-ring rounded-md border border-border px-4 py-2 text-sm"
                 (click)="generateInvite()"
               >
                 Generar enlace de invitación
               </button>
               @if (inviteLink(); as link) {
-                <code class="max-w-xs truncate text-xs text-neutral-500">{{ link }}</code>
+                <code class="max-w-xs truncate text-xs text-foreground-muted">{{ link }}</code>
               }
             }
           </div>
@@ -113,7 +113,7 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
           />
           <button
             type="button"
-            class="cf-focus-ring self-start rounded-md border px-4 py-2 text-sm"
+            class="cf-focus-ring self-start rounded-md border border-border px-4 py-2 text-sm"
             (click)="exportMarkdown()"
           >
             Exportar a Markdown

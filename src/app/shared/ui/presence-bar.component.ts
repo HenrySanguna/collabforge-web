@@ -10,7 +10,7 @@ import type { ParticipantDto } from '@collabforge/contracts';
       @for (participant of orderedParticipants(); track participant.userId) {
         <div class="relative -mr-2 last:mr-0">
           <span
-            class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white"
+            class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface text-xs font-semibold text-white"
             [style.backgroundColor]="participant.avatarColor"
             [title]="
               participant.userId === selfUserId() ? participant.name + ' (tú)' : participant.name
@@ -21,7 +21,7 @@ import type { ParticipantDto } from '@collabforge/contracts';
           @if (isOwner() && participant.userId !== selfUserId()) {
             <button
               type="button"
-              class="cf-focus-ring absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-red-600 text-[10px] leading-none text-white"
+              class="cf-focus-ring absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-surface bg-danger text-[10px] leading-none text-white"
               [attr.aria-label]="'Expulsar a ' + participant.name"
               [title]="'Expulsar a ' + participant.name"
               (click)="kickRequested.emit(participant.userId)"

@@ -31,15 +31,15 @@ export function formatCountdown(remainingMs: number): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (paused()) {
-      <p class="cf-focus-ring rounded-md bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+      <p class="cf-focus-ring rounded-md bg-warning px-3 py-1 text-xs font-medium text-warning-foreground">
         Pausado
       </p>
     } @else if (endsAt()) {
       <p
-        class="cf-focus-ring rounded-md px-3 py-1 text-xs font-medium"
-        [class.bg-red-100]="isLowTime()"
-        [class.text-red-800]="isLowTime()"
-        [class.bg-neutral-100]="!isLowTime()"
+        class="cf-focus-ring rounded-md px-3 py-1 font-mono text-xs font-medium tabular-nums"
+        [class.bg-danger]="isLowTime()"
+        [class.text-white]="isLowTime()"
+        [class.bg-surface-alt]="!isLowTime()"
       >
         {{ display() }}
       </p>

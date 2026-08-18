@@ -12,9 +12,9 @@ import { BoardsService } from '../../core/boards/boards.service';
       class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-4 px-4 text-center"
     >
       @if (error(); as message) {
-        <p class="text-sm text-red-600" role="alert">{{ message }}</p>
+        <p class="text-sm text-danger" role="alert">{{ message }}</p>
       } @else {
-        <p class="text-sm text-neutral-500">Uniéndote al tablero…</p>
+        <p class="text-sm text-foreground-muted">Uniéndote al tablero…</p>
       }
     </main>
   `,

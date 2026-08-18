@@ -24,7 +24,7 @@ interface LoginForm {
           <input
             type="email"
             formControlName="email"
-            class="cf-focus-ring rounded-md border px-3 py-2"
+            class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             autocomplete="email"
           />
         </label>
@@ -34,7 +34,7 @@ interface LoginForm {
           <input
             type="password"
             formControlName="password"
-            class="cf-focus-ring rounded-md border px-3 py-2"
+            class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             autocomplete="current-password"
           />
         </label>

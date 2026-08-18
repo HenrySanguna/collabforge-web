@@ -15,17 +15,17 @@ const PHASE_LABELS: Record<BoardSummaryDto['phase'], string> = {
   template: `
     <button
       type="button"
-      class="cf-focus-ring flex w-full flex-col gap-2 rounded-lg border p-4 text-left shadow-sm transition hover:shadow-md"
+      class="cf-focus-ring flex w-full flex-col gap-2 rounded-md border border-border p-4 text-left transition hover:bg-surface-alt"
       [class.opacity-60]="board().isArchived"
       (click)="boardSelected.emit()"
     >
       <h3 class="font-semibold">{{ board().title }}</h3>
-      <div class="flex items-center justify-between text-xs text-neutral-500">
+      <div class="flex items-center justify-between text-xs text-foreground-muted">
         <span>{{ phaseLabel() }}</span>
         <span>{{ board().myRole === 'owner' ? 'Facilitador' : 'Participante' }}</span>
       </div>
       @if (board().isArchived) {
-        <span class="text-xs text-neutral-400">Archivado</span>
+        <span class="text-xs text-foreground-muted">Archivado</span>
       }
     </button>
   `,

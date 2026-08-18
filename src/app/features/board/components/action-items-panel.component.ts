@@ -19,19 +19,19 @@ export interface ActionItemStatusToggleRequest {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (visible()) {
-      <section class="flex flex-col gap-3 rounded-md border p-3 text-sm" aria-label="Action items">
+      <section class="flex flex-col gap-3 rounded-md border border-border p-3 text-sm" aria-label="Action items">
         <h2 class="font-semibold">Action items</h2>
 
         @if (isOwner()) {
           <form class="flex flex-wrap gap-2" [formGroup]="draftForm" (ngSubmit)="submitCreate()">
             <input
-              class="cf-focus-ring flex-1 rounded border px-2 py-1 text-sm"
+              class="cf-focus-ring flex-1 appearance-none rounded border border-border px-2 py-1 text-sm"
               formControlName="text"
               placeholder="Nuevo action item…"
               maxlength="2000"
             />
             <select
-              class="cf-focus-ring rounded border px-2 py-1 text-sm"
+              class="cf-focus-ring appearance-none rounded border border-border px-2 py-1 text-sm"
               formControlName="assigneeId"
             >
               <option value="">Sin asignar</option>
@@ -41,7 +41,7 @@ export interface ActionItemStatusToggleRequest {
             </select>
             <button
               type="submit"
-              class="cf-focus-ring rounded border px-3 py-1"
+              class="cf-focus-ring rounded border border-border px-3 py-1"
               [disabled]="draftText.invalid"
             >
               Añadir
@@ -50,24 +50,24 @@ export interface ActionItemStatusToggleRequest {
         }
 
         @if (items().length === 0) {
-          <p class="text-xs text-neutral-500">Sin action items todavía.</p>
+          <p class="text-xs text-foreground-muted">Sin action items todavía.</p>
         } @else {
           <ul class="flex flex-col gap-2">
             @for (item of items(); track item.id) {
               <li class="flex items-center justify-between gap-2">
                 <span [class.line-through]="item.status === 'done'">{{ item.text }}</span>
-                <span class="text-xs text-neutral-500">{{ assigneeName(item.assigneeId) }}</span>
+                <span class="text-xs text-foreground-muted">{{ assigneeName(item.assigneeId) }}</span>
                 @if (isOwner()) {
                   <button
                     type="button"
-                    class="cf-focus-ring rounded border px-2 py-1 text-xs"
+                    class="cf-focus-ring rounded border border-border px-2 py-1 text-xs"
                     (click)="toggleStatus(item)"
                   >
                     {{ item.status === 'done' ? 'Reabrir' : 'Completar' }}
                   </button>
                   <button
                     type="button"
-                    class="cf-focus-ring rounded border px-2 py-1 text-xs"
+                    class="cf-focus-ring rounded border border-border px-2 py-1 text-xs"
                     (click)="remove(item.id)"
                   >
                     Eliminar

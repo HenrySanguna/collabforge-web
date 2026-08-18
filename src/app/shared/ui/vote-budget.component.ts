@@ -5,14 +5,14 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex items-center gap-2 text-xs text-neutral-600">
-      <span>{{ spent() }} de {{ budget() }} votos usados</span>
+    <div class="flex items-center gap-2 text-xs text-foreground-muted">
+      <span class="font-mono tabular-nums">{{ spent() }} de {{ budget() }} votos usados</span>
       <span class="flex gap-1">
         @for (pip of pips(); track pip) {
           <span
             class="h-2 w-2 rounded-full"
-            [class.bg-neutral-700]="pip < spent()"
-            [class.bg-neutral-200]="pip >= spent()"
+            [class.bg-foreground]="pip < spent()"
+            [class.bg-border]="pip >= spent()"
           ></span>
         }
       </span>

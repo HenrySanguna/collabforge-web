@@ -23,7 +23,7 @@ interface CreateBoardForm {
     <main class="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-8">
       <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-2xl font-semibold">Hola, {{ store.user()?.name }}</h1>
-        <button type="button" class="cf-focus-ring rounded-md border px-4 py-2" (click)="logout()">
+        <button type="button" class="cf-focus-ring rounded-md border border-border px-4 py-2" (click)="logout()">
           Cerrar sesión
         </button>
       </header>
@@ -38,7 +38,7 @@ interface CreateBoardForm {
 
       @if (showCreateForm()) {
         <form
-          class="flex flex-col gap-4 rounded-lg border p-4"
+          class="flex flex-col gap-4 rounded-md border border-border p-4"
           [formGroup]="createForm"
           (ngSubmit)="submit()"
         >
@@ -47,13 +47,13 @@ interface CreateBoardForm {
             <input
               type="text"
               formControlName="title"
-              class="cf-focus-ring rounded-md border px-3 py-2"
+              class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2"
             />
           </label>
 
           <label class="flex flex-col gap-1">
             <span class="text-sm">Plantilla</span>
-            <select formControlName="templateKey" class="cf-focus-ring rounded-md border px-3 py-2">
+            <select formControlName="templateKey" class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2">
               @for (option of templateOptions; track option.key) {
                 <option [value]="option.key">{{ option.label }}</option>
               }

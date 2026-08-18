@@ -8,11 +8,13 @@ import type { ConnectionState } from '../../core/realtime/realtime.service';
   template: `
     @if (label(); as text) {
       <p
-        class="cf-focus-ring rounded-md px-3 py-1 text-xs font-medium"
-        [class.bg-amber-100]="state() === 'connecting' || state() === 'reconnecting'"
-        [class.text-amber-800]="state() === 'connecting' || state() === 'reconnecting'"
-        [class.bg-red-100]="state() === 'disconnected'"
-        [class.text-red-800]="state() === 'disconnected'"
+        class="cf-focus-ring rounded-md border px-3 py-1 text-xs font-medium"
+        [class.bg-surface-alt]="state() === 'connecting' || state() === 'reconnecting'"
+        [class.text-foreground-muted]="state() === 'connecting' || state() === 'reconnecting'"
+        [class.border-border]="state() !== 'disconnected'"
+        [class.bg-danger]="state() === 'disconnected'"
+        [class.border-danger]="state() === 'disconnected'"
+        [class.text-white]="state() === 'disconnected'"
       >
         {{ text }}
       </p>

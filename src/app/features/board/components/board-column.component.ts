@@ -11,20 +11,20 @@ const DELETE_ALLOWED_PHASES: readonly BoardPhase[] = ['COLLECTING', 'GROUPING'];
   imports: [ReactiveFormsModule, StickyNoteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="flex flex-col gap-3 rounded-lg border p-4" [attr.aria-label]="column().title">
+    <section class="flex flex-col gap-3 rounded-md border border-border p-4" [attr.aria-label]="column().title">
       <h2 class="font-semibold" [style.color]="column().color">{{ column().title }}</h2>
 
       @if (canCreate()) {
         <form class="flex gap-2" [formGroup]="draftForm" (ngSubmit)="submit()">
           <input
-            class="cf-focus-ring flex-1 rounded border px-2 py-1 text-sm"
+            class="cf-focus-ring flex-1 appearance-none rounded border border-border px-2 py-1 text-sm"
             formControlName="draft"
             placeholder="Nueva nota…"
             maxlength="500"
           />
           <button
             type="submit"
-            class="cf-focus-ring rounded border px-3 py-1 text-sm"
+            class="cf-focus-ring rounded border border-border px-3 py-1 text-sm"
             [disabled]="draft.invalid"
           >
             Añadir
@@ -46,7 +46,7 @@ const DELETE_ALLOWED_PHASES: readonly BoardPhase[] = ['COLLECTING', 'GROUPING'];
             (voteRetracted)="voteRetracted.emit(note.id)"
           />
         } @empty {
-          <p class="text-xs text-neutral-500">Sin notas todavía.</p>
+          <p class="text-xs text-foreground-muted">Sin notas todavía.</p>
         }
       </div>
     </section>
