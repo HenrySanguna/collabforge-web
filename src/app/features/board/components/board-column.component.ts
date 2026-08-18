@@ -40,6 +40,7 @@ const DELETE_ALLOWED_PHASES: readonly BoardPhase[] = ['COLLECTING', 'GROUPING'];
             [voteCount]="voteTally()?.[note.id]"
             [myVoteCount]="myVotes()[note.id] || 0"
             [canVote]="canVote()"
+            [canRetract]="phase() === 'VOTING'"
             (deleteRequested)="deleteRequested.emit($event)"
             (voteCast)="voteCast.emit(note.id)"
             (voteRetracted)="voteRetracted.emit(note.id)"

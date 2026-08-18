@@ -117,6 +117,7 @@ describe('StickyNoteComponent', () => {
   it('muestra "Quitar voto" y emite voteRetracted solo cuando myVoteCount > 0', async () => {
     fixture.componentRef.setInput('note', aNote());
     fixture.componentRef.setInput('canVote', true);
+    fixture.componentRef.setInput('canRetract', true);
     fixture.componentRef.setInput('myVoteCount', 0);
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).not.toContain('Quitar voto');
@@ -132,5 +133,26 @@ describe('StickyNoteComponent', () => {
     button?.click();
 
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('muestra "Quitar voto" con presupuesto agotado (canVote false) mientras canRetract sea true', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('canVote', false);
+    fixture.componentRef.setInput('canRetract', true);
+    fixture.componentRef.setInput('myVoteCount', 1);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Votar');
+    expect(fixture.nativeElement.textContent).toContain('Quitar voto');
+  });
+
+  it('no muestra "Quitar voto" fuera de fase de votación (canRetract false) aunque haya voto propio', async () => {
+    fixture.componentRef.setInput('note', aNote());
+    fixture.componentRef.setInput('canVote', false);
+    fixture.componentRef.setInput('canRetract', false);
+    fixture.componentRef.setInput('myVoteCount', 1);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Quitar voto');
   });
 });

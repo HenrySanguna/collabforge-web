@@ -35,15 +35,15 @@ import type { NoteDto } from '@collabforge/contracts';
             >
               Votar
             </button>
-            @if (myVoteCount() > 0) {
-              <button
-                type="button"
-                class="cf-focus-ring rounded border px-2 py-0.5"
-                (click)="voteRetracted.emit()"
-              >
-                Quitar voto
-              </button>
-            }
+          }
+          @if (canRetract() && myVoteCount() > 0) {
+            <button
+              type="button"
+              class="cf-focus-ring rounded border px-2 py-0.5"
+              (click)="voteRetracted.emit()"
+            >
+              Quitar voto
+            </button>
           }
           @if (voteCount() !== undefined) {
             <span>{{ voteCount() }} votos</span>
@@ -62,6 +62,7 @@ export class StickyNoteComponent {
   readonly voteCount = input<number | undefined>(undefined);
   readonly myVoteCount = input<number>(0);
   readonly canVote = input(false);
+  readonly canRetract = input(false);
 
   readonly deleteRequested = output<string>();
   readonly voteCast = output<void>();
