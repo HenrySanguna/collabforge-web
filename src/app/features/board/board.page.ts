@@ -68,6 +68,8 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
             <cf-presence-bar
               [participants]="store.participants()"
               [selfUserId]="auth.user()?.id ?? null"
+              [isOwner]="b.myRole === 'owner'"
+              (kickRequested)="kickMember($event)"
             />
 
             @if (phase() === 'VOTING') {
@@ -232,6 +234,10 @@ export default class BoardPage {
 
   deleteNote(noteId: string): void {
     void this.realtime.deleteNote(noteId);
+  }
+
+  kickMember(userId: string): void {
+    void this.realtime.kickMember(userId);
   }
 
   castVote(noteId: string): void {

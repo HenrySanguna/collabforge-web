@@ -51,6 +51,7 @@ describe('BoardPage', () => {
       | 'createActionItem'
       | 'updateActionItem'
       | 'deleteActionItem'
+      | 'kickMember'
     >
   >;
 
@@ -64,6 +65,7 @@ describe('BoardPage', () => {
       'createActionItem',
       'updateActionItem',
       'deleteActionItem',
+      'kickMember',
     ]);
     (realtimeFacade as unknown as { connectionState: () => ConnectionState }).connectionState =
       signal<ConnectionState>('connected');
@@ -122,6 +124,15 @@ describe('BoardPage', () => {
 
     fixture.componentInstance.createNote('c1', 'Hola');
     expect(realtimeFacade.createNote).toHaveBeenCalledWith('c1', 'Hola');
+  });
+
+  it('kickMember delega en el facade con el userId', async () => {
+    await setup('retro-abc');
+    httpMock.expectOne(`${environment.apiUrl}/boards/retro-abc`).flush(aBoardResponse());
+    await fixture.whenStable();
+
+    fixture.componentInstance.kickMember('user-2');
+    expect(realtimeFacade.kickMember).toHaveBeenCalledWith('user-2');
   });
 
   it('createActionItem delega en el facade con texto y assigneeId', async () => {

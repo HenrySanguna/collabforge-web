@@ -63,4 +63,46 @@ describe('PresenceBarComponent', () => {
     ).map((el) => el.getAttribute('title'));
     expect(titles[0]).toContain('Beto');
   });
+
+  it('no muestra botón de expulsar cuando isOwner es false', async () => {
+    fixture.componentRef.setInput('selfUserId', 'user-1');
+    fixture.componentRef.setInput('isOwner', false);
+    fixture.componentRef.setInput('participants', [
+      aParticipant({ userId: 'user-1', name: 'Ana' }),
+      aParticipant({ userId: 'user-2', name: 'Beto' }),
+    ]);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('button')).toBeNull();
+  });
+
+  it('muestra botón de expulsar solo sobre otros participantes cuando isOwner es true', async () => {
+    fixture.componentRef.setInput('selfUserId', 'user-1');
+    fixture.componentRef.setInput('isOwner', true);
+    fixture.componentRef.setInput('participants', [
+      aParticipant({ userId: 'user-1', name: 'Ana' }),
+      aParticipant({ userId: 'user-2', name: 'Beto' }),
+    ]);
+    await fixture.whenStable();
+
+    const buttons = fixture.nativeElement.querySelectorAll('button');
+    expect(buttons.length).toBe(1);
+    expect((buttons[0] as HTMLElement).getAttribute('aria-label')).toBe('Expulsar a Beto');
+  });
+
+  it('emite kickRequested con el userId al hacer click en expulsar', async () => {
+    fixture.componentRef.setInput('selfUserId', 'user-1');
+    fixture.componentRef.setInput('isOwner', true);
+    fixture.componentRef.setInput('participants', [
+      aParticipant({ userId: 'user-1', name: 'Ana' }),
+      aParticipant({ userId: 'user-2', name: 'Beto' }),
+    ]);
+    await fixture.whenStable();
+
+    const spy = jasmine.createSpy();
+    fixture.componentInstance.kickRequested.subscribe(spy);
+    (fixture.nativeElement.querySelector('button') as HTMLButtonElement).click();
+
+    expect(spy).toHaveBeenCalledWith('user-2');
+  });
 });
