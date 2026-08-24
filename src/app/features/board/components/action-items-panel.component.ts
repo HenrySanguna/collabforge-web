@@ -31,7 +31,7 @@ export interface ActionItemStatusToggleRequest {
               maxlength="2000"
             />
             <select
-              class="cf-focus-ring appearance-none rounded border border-border px-2 py-1 text-sm"
+              class="cf-focus-ring cursor-pointer rounded border border-border px-2 py-1 text-sm"
               formControlName="assigneeId"
             >
               <option value="">Sin asignar</option>

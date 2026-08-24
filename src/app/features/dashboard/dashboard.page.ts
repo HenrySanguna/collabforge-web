@@ -53,7 +53,7 @@ interface CreateBoardForm {
 
           <label class="flex flex-col gap-1">
             <span class="text-sm">Plantilla</span>
-            <select formControlName="templateKey" class="cf-focus-ring appearance-none rounded-md border border-border px-3 py-2">
+            <select formControlName="templateKey" class="cf-focus-ring cursor-pointer rounded-md border border-border px-3 py-2">
               @for (option of templateOptions; track option.key) {
                 <option [value]="option.key">{{ option.label }}</option>
               }
