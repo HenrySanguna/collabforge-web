@@ -85,7 +85,22 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
                 Generar enlace de invitación
               </button>
               @if (inviteLink(); as link) {
-                <code class="max-w-xs truncate text-xs text-foreground-muted">{{ link }}</code>
+                <div class="flex w-full max-w-xs items-center gap-1 rounded-md border border-border p-1">
+                  <input
+                    type="text"
+                    readonly
+                    [value]="link"
+                    class="min-w-0 flex-1 truncate bg-transparent px-1 text-xs text-foreground-muted"
+                    (click)="$any($event.target).select()"
+                  />
+                  <button
+                    type="button"
+                    class="cf-focus-ring shrink-0 rounded border border-border px-2 py-1 text-xs"
+                    (click)="copyInviteLink(link)"
+                  >
+                    {{ inviteCopied() ? 'Copiado' : 'Copiar' }}
+                  </button>
+                </div>
               }
             }
           </div>
@@ -94,6 +109,7 @@ import type { BoardDetailDto } from '../../core/boards/models/board.models';
         <cf-phase-controls
           [phase]="phase()"
           [isOwner]="b.myRole === 'owner'"
+          [revealed]="store.revealed()"
           (phaseChange)="changePhase($event)"
           (startTimer)="startTimer($event)"
           (pauseTimer)="pauseTimer()"
@@ -172,6 +188,7 @@ export default class BoardPage {
   readonly board = signal<BoardDetailDto | null>(null);
   readonly loading = signal(true);
   readonly inviteLink = signal<string | null>(null);
+  readonly inviteCopied = signal(false);
 
   protected readonly phase = computed<BoardPhase>(() => this.store.phase() ?? 'COLLECTING');
   protected readonly votesSpent = computed(() =>
@@ -225,6 +242,14 @@ export default class BoardPage {
 
     this.boardsService.createInvite(board.id).subscribe((invite) => {
       this.inviteLink.set(`${location.origin}/invite/${invite.token}`);
+      this.inviteCopied.set(false);
+    });
+  }
+
+  copyInviteLink(link: string): void {
+    void navigator.clipboard.writeText(link).then(() => {
+      this.inviteCopied.set(true);
+      setTimeout(() => this.inviteCopied.set(false), 2000);
     });
   }
 
