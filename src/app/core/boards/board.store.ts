@@ -27,6 +27,12 @@ export class BoardStore {
   private readonly _timerPaused = signal(false);
   private readonly _timerRemainingMs = signal<number | undefined>(undefined);
 
+  // serverTime vive en señal propia (no computed sobre snapshot): además del board:sync
+  // inicial, session:timer-updated manda su propio timestamp fresco al arrancar/pausar/
+  // cancelar el timer, para que la corrección de drift en cf-session-timer no reutilice
+  // un serverTime viejo capturado minutos antes en la conexión.
+  private readonly _serverTime = signal(new Date().toISOString());
+
   // myVotes/tally: idem, actualizados de forma independiente por vote:my-update / vote:tally.
   private readonly _myVotes = signal<Record<string, number>>({});
   private readonly _tally = signal<Record<string, number> | null>(null);
@@ -56,7 +62,7 @@ export class BoardStore {
   readonly voteBudget = computed(() => this.board()?.voteBudget ?? 0);
   readonly allowMultiVote = computed(() => this.board()?.allowMultiVote ?? false);
   readonly liveTally = computed(() => this.board()?.liveTally ?? false);
-  readonly serverTime = computed(() => this._snapshot()?.serverTime ?? new Date().toISOString());
+  readonly serverTime = this._serverTime.asReadonly();
 
   readonly notesByColumn = computed(() => {
     const grouped: Partial<Record<string, OptimisticNote[]>> = {};
@@ -108,6 +114,7 @@ export class BoardStore {
     this._participants.set([]);
     this._phase.set(board.phase);
     this._revealed.set(board.revealed);
+    this._serverTime.set(new Date().toISOString());
     this._timerEndsAt.set(null);
     this._timerPaused.set(false);
     this._timerRemainingMs.set(undefined);
@@ -125,6 +132,7 @@ export class BoardStore {
 
     this._phase.set(snapshot.board.phase);
     this._revealed.set(snapshot.board.revealed);
+    this._serverTime.set(snapshot.serverTime);
     this._timerEndsAt.set(snapshot.board.timerEndsAt);
     // El snapshot no trae timerPaused/timerRemainingMs (gap del backend: board-snapshot.service
     // solo serializa timerEndsAt); se asume no pausado hasta que llegue un session:timer-updated.
@@ -147,10 +155,16 @@ export class BoardStore {
     this._revealed.set(revealed);
   }
 
-  setTimerState(endsAt: string | null, paused: boolean, remainingMs?: number): void {
+  setTimerState(
+    endsAt: string | null,
+    paused: boolean,
+    remainingMs?: number,
+    serverTime: string = new Date().toISOString(),
+  ): void {
     this._timerEndsAt.set(endsAt);
     this._timerPaused.set(paused);
     this._timerRemainingMs.set(remainingMs);
+    this._serverTime.set(serverTime);
   }
 
   applyMyVoteUpdate(noteId: string, count: number): void {
@@ -208,6 +222,7 @@ export class BoardStore {
     this._participants.set([]);
     this._phase.set(null);
     this._revealed.set(false);
+    this._serverTime.set(new Date().toISOString());
     this._timerEndsAt.set(null);
     this._timerPaused.set(false);
     this._timerRemainingMs.set(undefined);

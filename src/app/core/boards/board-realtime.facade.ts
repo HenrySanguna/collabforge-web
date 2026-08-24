@@ -14,6 +14,7 @@ import type {
   NoteMovedPayload,
   RetractVoteAck,
   StartTimerAck,
+  TimerUpdatedPayload,
   UpdateActionItemAck,
   UpdateActionItemPayload,
   UpdateNoteAck,
@@ -26,6 +27,12 @@ export interface CursorPosition {
   x: number;
   y: number;
 }
+
+// @collabforge/contracts se consume como paquete versionado (tag de git), no como
+// path local del monorepo: hasta que se publique un tag nuevo con serverTime en
+// TimerUpdatedPayload, se extiende el tipo acá para no perder tipado en el cliente
+// mientras el backend ya lo manda en runtime.
+type TimerUpdatedWithServerTime = TimerUpdatedPayload & { serverTime: string };
 
 @Injectable({ providedIn: 'root' })
 export class BoardRealtimeFacade {
@@ -61,8 +68,10 @@ export class BoardRealtimeFacade {
     socket.on('session:phase-changed', ({ phase, revealed }) => {
       this.store.setPhase(phase, revealed);
     });
-    socket.on('session:timer-updated', ({ endsAt, paused, remainingMs }) => {
-      this.store.setTimerState(endsAt, paused, remainingMs);
+    socket.on('session:timer-updated', (payload) => {
+      const { endsAt, paused, remainingMs, serverTime } =
+        payload as TimerUpdatedWithServerTime;
+      this.store.setTimerState(endsAt, paused, remainingMs, serverTime);
     });
     // board:revealed no trae datos aplicables: el backend reenvía un board:sync completo
     // por viewer inmediatamente después, y ese sync ya trae notas/autoría/tally revelados.
