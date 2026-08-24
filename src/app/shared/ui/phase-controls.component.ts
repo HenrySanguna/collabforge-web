@@ -15,6 +15,8 @@ const PHASE_LABELS: Record<BoardPhase, string> = {
   DISCUSSING: 'Discusión',
 };
 
+const PHASE_ORDER: BoardPhase[] = ['COLLECTING', 'GROUPING', 'VOTING', 'DISCUSSING'];
+
 const MIN_DURATION_MINUTES = 1;
 const MAX_DURATION_MINUTES = 60;
 
@@ -25,7 +27,9 @@ const MAX_DURATION_MINUTES = 60;
   template: `
     @if (isOwner()) {
       <div class="flex flex-wrap items-center gap-2 rounded-md border border-border p-3 text-sm">
-        <span class="font-medium">Fase: {{ phaseLabel() }}</span>
+        <span class="rounded-full bg-brand-500 px-3 py-1 font-medium text-white">
+          Fase: {{ phaseLabel() }}
+        </span>
 
         @for (next of nextPhases(); track next) {
           <button
@@ -33,7 +37,7 @@ const MAX_DURATION_MINUTES = 60;
             class="cf-focus-ring rounded border border-border px-3 py-1"
             (click)="phaseChange.emit(next)"
           >
-            → {{ phaseLabels[next] }}
+            {{ isForward(next) ? '→' : '←' }} {{ phaseLabels[next] }}
           </button>
         }
 
@@ -70,13 +74,18 @@ const MAX_DURATION_MINUTES = 60;
           Cancelar
         </button>
 
-        @if (canReveal()) {
+        @if (phase() !== 'DISCUSSING') {
           <button
             type="button"
-            class="cf-focus-ring rounded border border-border px-3 py-1"
+            class="cf-focus-ring rounded border px-3 py-1"
+            [class.border-border]="!revealed()"
+            [class.border-brand-500]="revealed()"
+            [class.bg-brand-50]="revealed()"
+            [class.text-brand-600]="revealed()"
+            [disabled]="revealed()"
             (click)="reveal.emit()"
           >
-            Revelar autoría
+            {{ revealed() ? 'Autoría revelada' : 'Revelar autoría' }}
           </button>
         }
       </div>
@@ -86,6 +95,7 @@ const MAX_DURATION_MINUTES = 60;
 export class PhaseControlsComponent {
   readonly phase = input.required<BoardPhase>();
   readonly isOwner = input.required<boolean>();
+  readonly revealed = input(false);
 
   readonly phaseChange = output<BoardPhase>();
   readonly startTimer = output<number>();
@@ -101,7 +111,10 @@ export class PhaseControlsComponent {
 
   readonly phaseLabel = computed(() => PHASE_LABELS[this.phase()]);
   readonly nextPhases = computed(() => TRANSITIONS[this.phase()]);
-  readonly canReveal = computed(() => this.phase() !== 'DISCUSSING');
+
+  isForward(next: BoardPhase): boolean {
+    return PHASE_ORDER.indexOf(next) > PHASE_ORDER.indexOf(this.phase());
+  }
 
   onDurationInput(event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
