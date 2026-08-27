@@ -1,59 +1,84 @@
-# CollabforgeWeb
+# CollabForge Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.33.
+Angular frontend for **CollabForge**, a real-time collaborative board application. It handles authentication, dashboards, kanban-style boards, and invite acceptance, and talks to the [`collabforge-api`](https://github.com/HenrySanguna/collabforge-api) backend over REST and WebSocket (Socket.IO) for live updates.
 
-## Development server
+## Tech stack
 
-To start a local development server, run:
+- **Angular 20** (standalone components, signals, `@if`/`@for` control flow)
+- **Tailwind CSS 4** for layout/spacing
+- **Socket.IO client** for real-time board updates
+- **pnpm** as package manager
+- **Cloudflare Workers** for deployment (via `wrangler`)
 
-```bash
-ng serve
-```
+## Prerequisites
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js 22
+- pnpm 10.18.0 (see `packageManager` in `package.json`)
+- A running instance of [`collabforge-api`](https://github.com/HenrySanguna/collabforge-api) (local or remote)
 
-## Code scaffolding
+## Getting started
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Install dependencies:
 
 ```bash
-ng generate --help
+pnpm install
 ```
 
-## Building
-
-To build the project run:
+Start the local development server:
 
 ```bash
-ng build
+pnpm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The app runs at `http://localhost:4200/` and reloads on file changes.
 
-## Running unit tests
+By default, the local environment (`src/environments/environment.ts`) points to `http://localhost:3000/api` and `http://localhost:3000` for REST and WebSocket traffic. Adjust these values if your local API runs elsewhere.
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Project structure
 
-```bash
-ng test
+```
+src/app/
+  core/          # singleton services: auth, boards, realtime, config, error, theme
+  features/      # routed features: auth, dashboard, board, invite
+  layout/        # app shell/layout components
+  shared/        # reusable directives, pipes, UI components
 ```
 
-## Running end-to-end tests
+Routing is defined in `src/app/app.routes.ts`, with lazy-loaded auth routes and lazy-loaded standalone pages for dashboard, board, and invite acceptance.
 
-For end-to-end (e2e) testing, run:
+## Available scripts
 
-```bash
-ng e2e
-```
+| Command               | Description                                   |
+| ---------------------- | ---------------------------------------------- |
+| `pnpm start`            | Run the dev server (`ng serve`)                |
+| `pnpm build`            | Production build to `dist/`                    |
+| `pnpm watch`            | Development build in watch mode                |
+| `pnpm test`             | Run unit tests (Karma/Jasmine)                  |
+| `pnpm run test:ci`      | Run unit tests headless with coverage           |
+| `pnpm run lint`         | Lint the codebase (`ng lint`)                   |
+| `pnpm run format`       | Format `.ts`/`.html` files with Prettier        |
+| `pnpm run format:check` | Check formatting without writing changes        |
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Environments
 
-## Additional Resources
+Three environment files are provided under `src/environments/`:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- `environment.ts` — local development (`localhost:3000`)
+- `environment.staging.ts` — staging API
+- `environment.production.ts` — production API
+
+Each defines `apiUrl` (REST) and `wsUrl` (WebSocket) for the corresponding `collabforge-api` deployment.
+
+## Deployment
+
+The app is deployed to Cloudflare Workers via `wrangler.jsonc`. The build configuration (`staging` or `production`) is selected based on the CI branch (see `.github/workflows/ci.yml` and the `build.command` in `wrangler.jsonc`).
+
+## Related repositories
+
+- [`collabforge-api`](https://github.com/HenrySanguna/collabforge-api) — backend API and source of the `@collabforge/contracts` package consumed by this project.
+
+## License
+
+This repository is **private and unlicensed** (`"private": true` in `package.json`, no `LICENSE` file present). All rights reserved; no open-source license is granted for use, modification, or redistribution unless explicitly stated otherwise by the repository owner.
+
+Third-party dependencies (Angular, RxJS, Socket.IO, Tailwind CSS, etc.) retain their own licenses (mostly MIT) — see each package's entry in `node_modules` or its npm registry page for details.
